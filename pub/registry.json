@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "tools": {
+    "marathon-storage-tool": {
+      "topics": [ "marathon", "recovery" ],
+      "desc": "View and modify Marathon ZK state",
+      "versions": [
+        {
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.4.5",
+              "type": "docker"
+            }
+          ],
+          "version": [
+            1,
+            4,
+            5
+          ]
+        }
+      ]
+    }
+  }
+}
