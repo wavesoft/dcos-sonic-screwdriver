@@ -3,20 +3,538 @@
   "tools": {
     "marathon-storage-tool": {
       "topics": [ "marathon", "recovery" ],
+      "help": {
+        "url": "https://raw.githubusercontent.com/mesosphere/marathon-storage-tool/master/README.md",
+        "inline": true,
+        "md": true
+      },
       "desc": "View and modify Marathon ZK state",
       "versions": [
         {
+          "version": [1,5,5],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.5.5",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,6,322],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.6.322",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,6,486],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.6.486",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,6,488],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.6.488",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,6,490],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.6.490",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,6,493],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.6.493",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,6,535],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.6.535",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,6,496],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.6.496",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,6,352],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.6.352",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,5,11],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.5.11",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,4,12],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.4.12",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,5,10],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.5.10",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,5,9],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.5.9",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,5,8],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.5.8",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,5,7],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.5.7",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,5,6],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.5.6",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,5,4],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.5.4",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,5,3],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.5.3",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,5,2],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.5.2",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,4,11],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.4.11",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,4,10],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.4.10",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,4,9],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.4.9",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,5,1,2],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.5.1.2",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,3,13],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.3.13",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,3,12],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.3.12",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,3,11],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.3.11",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,3,10],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.3.10",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,3,9],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.3.9",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,3,8],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.3.8",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,3,7],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.3.7",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,3,6],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.3.6",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,3,5],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.3.5",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,3,4],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.3.4",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,3,3],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.3.3",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,3,2],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.3.2",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,3,1],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.3.1",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,3,0],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.3.0",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,4,8],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.4.8",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,4,7],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.4.7",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,4,6],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.4.6",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,4,5],
           "artifacts": [
             {
               "image": "mesosphere/marathon-storage-tool",
               "tag": "1.4.5",
               "type": "docker"
             }
-          ],
-          "version": [
-            1,
-            4,
-            5
+          ]
+        },
+
+        {
+          "version": [1,4,4],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.4.4",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,4,3],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.4.3",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,4,2],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.4.2",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,4,1],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.4.1",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,4,0],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.4.0",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,5,1],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.5.1",
+              "type": "docker"
+            }
+          ]
+        },
+
+        {
+          "version": [1,5,0],
+          "artifacts": [
+            {
+              "image": "mesosphere/marathon-storage-tool",
+              "tag": "1.5.0",
+              "type": "docker"
+            }
           ]
         }
       ]

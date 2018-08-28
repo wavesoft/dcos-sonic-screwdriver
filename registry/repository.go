@@ -1,6 +1,7 @@
 package registry
 
 import (
+  "bufio"
   "crypto/sha256"
   "encoding/hex"
   "encoding/json"
@@ -41,7 +42,7 @@ func GetToolDir(tool string) (string, error) {
 /**
  * Compose a name for the given too/version/artifact combination
  */
-func GetArchiveDir(tool string, version *ToolVersion, artifact *ToolArtifact) (string, error) {
+func GetArchiveDir(tool string, version *VersionInfo, artifact *ToolArtifact) (string, error) {
   toolDir, err := GetToolDir(tool)
   if err != nil {
     return "", err
@@ -50,9 +51,9 @@ func GetArchiveDir(tool string, version *ToolVersion, artifact *ToolArtifact) (s
   return fmt.Sprintf(
     "%s/%d.%d.%d",
     toolDir,
-    uint32(version.Version[0]),
-    uint32(version.Version[1]),
-    uint32(version.Version[2])), nil
+    uint32(version[0]),
+    uint32(version[1]),
+    uint32(version[2])), nil
 }
 
 /**
@@ -106,11 +107,19 @@ func GetInstalledVersions(tool string) (InstalledVersions, error) {
 func GetArtifactEntrypoint(archiveDir string, artifact *ToolArtifact) (string, error) {
   entrypoint := ""
   if (artifact.DockerToolArtifact != nil) {
-    entrypoint = "/docker-run.sh"
+    entrypoint = "/run.sh"
   } else {
-    entrypoint := artifact.Entrypoint
-    if entrypoint == "" {
-      entrypoint = GetDefaultEntrypoint()
+    if artifact.Extract {
+      entrypoint := artifact.Entrypoint
+      if entrypoint == "" {
+        entrypoint = GetDefaultEntrypoint()
+      }
+    } else {
+      if artifact.Interpreter != "" {
+        entrypoint = "/run.sh"
+      } else {
+        entrypoint = "/tool"
+      }
     }
   }
 
@@ -182,9 +191,38 @@ func CreateStateFlag(path string, artifact *ToolArtifact) error {
 }
 
 /**
+ * Remove archive
+ */
+func RemoveArtifact(tool string, version *VersionInfo, artifact *ToolArtifact) error {
+  if (artifact.DockerToolArtifact != nil) {
+    fmt.Printf("%s %s %s\n", Blue("==> "), Gray("Removing"), Bold(Gray(artifact.Image+":"+artifact.Tag)))
+    err := RemoveDockerImage(artifact.Image, artifact.Tag)
+    if err != nil {
+      return errors.New("unable to remove docker image: " + err.Error())
+    }
+
+  } else if (artifact.ExecutableToolArtifact != nil) {
+    fmt.Printf("%s %s %s/%s\n", Blue("==> "), Gray("Removing"), Bold(Gray(tool)), Gray(version.ToString()))
+    dir, err := GetArchiveDir(tool, version, artifact)
+    if err != nil {
+      return errors.New("unable to locate archive dir: " + err.Error())
+    }
+    if _, err := os.Stat(dir); err == nil {
+      err = os.RemoveAll(dir)
+      if err != nil {
+        return errors.New("unable to remove archive folder: " + err.Error())
+      }
+    }
+
+  }
+
+  return nil
+}
+
+/**
  * Download package and validate
  */
-func FetchArchive(tool string, version *ToolVersion, artifact *ToolArtifact) (string, error) {
+func FetchArchive(tool string, version *VersionInfo, artifact *ToolArtifact) (string, error) {
   // Install artifact
   if (artifact.DockerToolArtifact != nil) {
     return CreateDockerWrapper(tool, version, artifact)
@@ -206,7 +244,7 @@ func FetchArchive(tool string, version *ToolVersion, artifact *ToolArtifact) (st
 /**
  * Create a shell script that wraps docker
  */
-func CreateDockerWrapper(tool string, version *ToolVersion, artifact *ToolArtifact) (string, error) {
+func CreateDockerWrapper(tool string, version *VersionInfo, artifact *ToolArtifact) (string, error) {
   // Prepare package dir
   dir, err := GetArchiveDir(tool, version, artifact)
   if err != nil {
@@ -231,8 +269,9 @@ func CreateDockerWrapper(tool string, version *ToolVersion, artifact *ToolArtifa
   }
 
   // Create wrapper script
-  dat := []byte(fmt.Sprintf("#!/bin/bash\ndocker run -it --rm %s:%s $*", artifact.Image, artifact.Tag))
-  err = ioutil.WriteFile(dir + "/docker-run.sh", dat, 0755)
+  dat := []byte(fmt.Sprintf("#!/bin/bash\ndocker run -it --rm %s %s:%s $*\n",
+    artifact.DockerArgs, artifact.Image, artifact.Tag))
+  err = ioutil.WriteFile(dir + "/run.sh", dat, 0755)
   if err != nil {
     return "", errors.New(fmt.Sprintf(
       "could not create wrapper: %s", err.Error()))
@@ -246,13 +285,13 @@ func CreateDockerWrapper(tool string, version *ToolVersion, artifact *ToolArtifa
   }
 
   // Return the entrypoint
-  return dir + "/docker-run.sh", nil
+  return dir + "/run.sh", nil
 }
 
 /**
  * Download git archive and validate
  */
-func FetchGitArchive(tool string, version *ToolVersion, artifact *ToolArtifact) (string, error) {
+func FetchGitArchive(tool string, version *VersionInfo, artifact *ToolArtifact) (string, error) {
   // Prepare package dir
   dir, err := GetArchiveDir(tool, version, artifact)
   if err != nil {
@@ -303,7 +342,7 @@ func FetchGitArchive(tool string, version *ToolVersion, artifact *ToolArtifact) 
 /**
  * Download web archive and validate
  */
-func FetchHttpArchive(tool string, version *ToolVersion, artifact *ToolArtifact) (string, error) {
+func FetchHttpArchive(tool string, version *VersionInfo, artifact *ToolArtifact) (string, error) {
   client := RegistryHttpClient(true)
   srcUrl := artifact.Source.URL
   fmt.Printf("%s %s\n", Blue("==> "), Bold(Gray(srcUrl)))
@@ -344,32 +383,74 @@ func FetchHttpArchive(tool string, version *ToolVersion, artifact *ToolArtifact)
   bar := pb.New(contentLength).SetUnits(pb.U_BYTES)
   bar.Start()
   defer bar.Finish()
+  barStream := bar.NewProxyReader(data)
 
-  // Extract
-  err = ExtractTarGz(bar.NewProxyReader(data), dir + "/")
-  if err != nil {
-    return "", errors.New(fmt.Sprintf(
-      "could extract archive: %s", err.Error()))
-  }
+  // If this is an archive, extract it
+  entrypointFile := ""
+  if artifact.Extract {
+    err = ExtractTarGz(barStream, dir + "/")
+    if err != nil {
+      return "", errors.New(fmt.Sprintf(
+        "could extract archive: %s", err.Error()))
+    }
 
-  // Now validate checksum
-  csum := hex.EncodeToString(hasher.Sum(nil))
-  if csum != artifact.Source.Checksum {
-    os.RemoveAll(dir)
-    return "", errors.New("Checksum validation failed")
-  }
+    // Now validate checksum
+    csum := hex.EncodeToString(hasher.Sum(nil))
+    if csum != artifact.Source.Checksum {
+      os.RemoveAll(dir)
+      return "", errors.New("checksum validation failed")
+    }
 
-  // Get entrypoint
-  entrypoint := artifact.Entrypoint
-  if entrypoint == "" {
-    entrypoint = GetDefaultEntrypoint()
-  }
-  entrypointFile := dir + "/" + entrypoint
+    // Get entrypoint
+    entrypoint := artifact.Entrypoint
+    if entrypoint == "" {
+      entrypoint = GetDefaultEntrypoint()
+    }
+    entrypointFile := dir + "/" + entrypoint
 
-  // Make sure entrypoint exists
-  if _, err := os.Stat(entrypointFile); os.IsNotExist(err) {
-    return "", errors.New(fmt.Sprintf(
-      "missing tool entrypoint: %s", entrypoint))
+    // Make sure entrypoint exists
+    if _, err := os.Stat(entrypointFile); os.IsNotExist(err) {
+      return "", errors.New(fmt.Sprintf(
+        "missing tool entrypoint: %s", entrypoint))
+    }
+
+  // Otherwise, just download the file
+  } else {
+
+    // Download contents to /tool
+    entrypointFile = dir + "/tool"
+    f, err := os.Create(entrypointFile)
+    if err != nil {
+      return "", errors.New(fmt.Sprintf(
+        "could create destination file: %s", err.Error()))
+    }
+    defer f.Close()
+
+    // Try GZip and fall-back to plaintext
+    writer := bufio.NewWriter(f)
+    err = DownloadFileGz(barStream, writer)
+    if err != nil {
+      return "", errors.New(fmt.Sprintf(
+        "could not process file stream: %s", err.Error()))
+    }
+    writer.Flush()
+
+    // If we are using an interpreter, create a wrapper file
+    if artifact.Interpreter != "" {
+      dat := []byte(fmt.Sprintf("#!/bin/bash\n%s %s $*\n",
+        artifact.Interpreter, entrypointFile))
+      err = ioutil.WriteFile(dir + "/run.sh", dat, 0755)
+      if err != nil {
+        return "", errors.New(fmt.Sprintf(
+          "could not create wrapper: %s", err.Error()))
+      }
+      entrypointFile = dir + "/run.sh"
+
+    // Otherwise make it executable
+    } else {
+      f.Chmod(0755)
+    }
+
   }
 
   // Create a flag that indicates that the downloaded archive is ready for use

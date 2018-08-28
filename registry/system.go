@@ -73,6 +73,37 @@ func PullDockerImage(image string, tag string) error {
 }
 
 /**
+ * Remove docker image
+ */
+func RemoveDockerImage(image string, tag string) error {
+  cmd := exec.Command("docker", "rmi", image+":"+tag)
+  stdout, err := cmd.StdoutPipe()
+  if err != nil {
+    return errors.New("Unable to open StdOut Pipe: " + err.Error())
+  }
+  stderr, err := cmd.StderrPipe()
+  if err != nil {
+    return errors.New("Unable to open StdErr Pipe: " + err.Error())
+  }
+  if err := cmd.Start(); err != nil {
+    return err
+  }
+
+  go func() {
+      _, _ = io.Copy(os.Stdout, stdout)
+  }()
+
+  go func() {
+      _, _ = io.Copy(os.Stderr, stderr)
+  }()
+
+  if err := cmd.Wait(); err != nil {
+    return err
+  }
+  return nil
+}
+
+/**
  * Create a symbolic link on the user bin directory
  */
  func CreateBinSymlink(fullPath string, name string) error {

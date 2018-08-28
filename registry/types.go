@@ -18,6 +18,7 @@ const (
 type DockerToolArtifact struct {
   Image       string                  `json:"image"`
   Tag         string                  `json:"tag"`
+  DockerArgs  string                  `json:"dockerArgs"`
 }
 
 type HttpSource struct {
@@ -40,6 +41,7 @@ type ExecutableToolArtifact struct {
   Arch        string                  `json:"arch"`
   Platform    string                  `json:"platform"`
   Interpreter string                  `json:"interpreter"`
+  Extract     bool                    `json:"extract"`
 }
 
 type ToolArtifact struct {
@@ -62,10 +64,27 @@ type ToolVersion struct {
 type ToolVersions []ToolVersion
 
 /**
+ * Help text or link
+ */
+type ToolHelpText struct {
+  Text      string                    `json:"text"`
+}
+type ToolHelpURL struct {
+  URL       string                    `json:"url"`
+  Inline    bool                      `json:"inline"`
+  Markdown  bool                      `json:"md"`
+}
+type ToolHelp struct {
+  *ToolHelpText
+  *ToolHelpURL
+}
+
+/**
  * Tool details
  */
 type ToolInfo struct {
   Versions  ToolVersions              `json:"versions"`
+  Help      ToolHelp                  `json:"help"`
   Desc      string                    `json:"desc"`
   Topics    []string                  `json:"topics"`
 }
@@ -172,7 +191,7 @@ func (v VersionInfo) LessThan(n * VersionInfo) bool {
   var right float64 = n[0] * 1000000 + n[1] * 1000 + n[2]
   return left < right
 }
-func (v VersionInfo) GreaterThan(n * VersionInfo) bool {
+func (v VersionInfo) GraterThan(n * VersionInfo) bool {
   var left float64 = v[0] * 1000000 + v[1] * 1000 + v[2]
   var right float64 = n[0] * 1000000 + n[1] * 1000 + n[2]
   return left > right
