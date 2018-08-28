@@ -100,6 +100,14 @@ func HasBinSymlink(name string) bool {
 }
 
 /**
+ * Get the target of the bin symlink
+ */
+ func ReadBinSymlink(name string) (string, error) {
+  linkTarget := GetSymlinkBinPath() + "/" + name
+  return os.Readlink(linkTarget)
+ }
+
+/**
  * Calculate the size of the designated directory
  */
 func DirSize(path string) (int64, error) {
@@ -116,7 +124,7 @@ func DirSize(path string) (int64, error) {
 /**
  * Get an artifact that matches our system
  */
-func FindFirstRunableArtifact(version ToolVersion) (*ToolArtifact, error) {
+func FindFirstRunableArtifact(version *ToolVersion) (*ToolArtifact, error) {
   for _, artifact := range version.Artifacts {
     switch artifact.Type {
 

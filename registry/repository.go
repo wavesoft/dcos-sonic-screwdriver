@@ -1,35 +1,184 @@
 package registry
 
 import (
-  . "github.com/logrusorgru/aurora"
-  "gopkg.in/src-d/go-git.v4"
   "crypto/sha256"
   "encoding/hex"
+  "encoding/json"
   "errors"
   "fmt"
   "gopkg.in/cheggaaa/pb.v1"
+  "gopkg.in/src-d/go-git.v4"
   "io"
   "io/ioutil"
   "os"
   "strconv"
+  . "github.com/logrusorgru/aurora"
 )
 
+type InstalledVersions []InstalledVersion
+
+type InstalledVersion struct {
+  Version     VersionInfo
+  Artifact    ToolArtifact
+  Entrypoint  string
+}
+
+
 /**
- * Compose a name for the given too/version/artifact combination
+ * Return the base directory to the tool
  */
-func PkgDir(tool string, version *ToolVersion, artifact *ToolArtifact) (string, error) {
+func GetToolDir(tool string) (string, error) {
   registryPath, err := GetRegistryPath()
   if err != nil {
     return "", err
   }
 
   return fmt.Sprintf(
-    "%s/%s-%d.%d.%d",
+    "%s/tools/%s",
     registryPath,
-    tool,
+    tool), nil
+}
+/**
+ * Compose a name for the given too/version/artifact combination
+ */
+func GetArchiveDir(tool string, version *ToolVersion, artifact *ToolArtifact) (string, error) {
+  toolDir, err := GetToolDir(tool)
+  if err != nil {
+    return "", err
+  }
+
+  return fmt.Sprintf(
+    "%s/%d.%d.%d",
+    toolDir,
     uint32(version.Version[0]),
     uint32(version.Version[1]),
     uint32(version.Version[2])), nil
+}
+
+/**
+ * Return a list of the installed versions of the given tool
+ */
+func GetInstalledVersions(tool string) (InstalledVersions, error) {
+  versions := InstalledVersions{}
+  toolDir, err := GetToolDir(tool)
+  if err != nil {
+    return versions, err
+  }
+
+  // Check if the tool folder is missing
+  if _, err := os.Stat(toolDir); err != nil {
+    return versions, nil
+  }
+
+  // List versions
+  files, err := ioutil.ReadDir(toolDir)
+  if err != nil {
+    return versions, err
+  }
+  for _, f := range files {
+    verInfo, err := VersionFromString(f.Name())
+    if err != nil {
+      continue
+    }
+
+    // Load artifact from the state
+    artifactDir := toolDir + "/" + f.Name()
+    artifact, err := ReadStateFlag(artifactDir + "/.state")
+    if err != nil {
+      continue
+    }
+
+    // Get the entrypoint
+    entrypoint, err := GetArtifactEntrypoint(artifactDir, artifact)
+    if err != nil {
+      continue
+    }
+
+    versions = append(versions, InstalledVersion{ *verInfo, *artifact, entrypoint })
+  }
+
+  return versions, nil
+}
+
+/**
+ * Resolve to the artifact entrypoint, according to it's type
+ */
+func GetArtifactEntrypoint(archiveDir string, artifact *ToolArtifact) (string, error) {
+  entrypoint := ""
+  if (artifact.DockerToolArtifact != nil) {
+    entrypoint = "/docker-run.sh"
+  } else {
+    entrypoint := artifact.Entrypoint
+    if entrypoint == "" {
+      entrypoint = GetDefaultEntrypoint()
+    }
+  }
+
+  // Make sure entrypoint exists
+  entrypointFile := archiveDir + "/" + entrypoint
+  if _, err := os.Stat(entrypointFile); os.IsNotExist(err) {
+    return "", errors.New(fmt.Sprintf(
+      "missing tool entrypoint: %s", entrypoint))
+  }
+
+  return archiveDir, nil
+}
+
+/**
+ * Checks if a tool with this name exists
+ */
+func IsToolInstalled(tool string) bool {
+  toolDir, err := GetToolDir(tool)
+  if err != nil {
+    return false
+  }
+
+  if _, err := os.Stat(toolDir); err == nil {
+    return true
+  }
+  return false
+}
+
+/**
+ * Remove the tool from the registry
+ */
+func RemoveTool(tool string) error {
+  toolDir, err := GetToolDir(tool)
+  if err != nil {
+    return err
+  }
+
+  return os.RemoveAll(toolDir)
+}
+
+/**
+ * Read the artifact metadata from the ready flag
+ */
+func ReadStateFlag(path string) (*ToolArtifact, error) {
+  byt, err := ioutil.ReadFile(path)
+  if (err != nil) {
+    return nil, err
+  }
+
+  // Parse the JSON document
+  artifact := new(ToolArtifact)
+  if err := json.Unmarshal(byt, artifact); err != nil {
+    return nil, err
+  }
+
+  return artifact, nil
+}
+
+/**
+ * Create a flag with the tool artifact details
+ */
+func CreateStateFlag(path string, artifact *ToolArtifact) error {
+  bytes, err := json.Marshal(artifact)
+  if err != nil {
+    return err
+  }
+
+  return ioutil.WriteFile(path, bytes, 0644)
 }
 
 /**
@@ -46,12 +195,12 @@ func FetchArchive(tool string, version *ToolVersion, artifact *ToolArtifact) (st
       return FetchHttpArchive(tool, version, artifact)
     } else {
       return "", errors.New(fmt.Sprintf(
-        "No package sources are available for %s/%s", tool, version.VersionString()))
+        "no package sources are available for %s/%s", tool, version.ToString()))
     }
   }
 
   return "", errors.New(fmt.Sprintf(
-    "No known installable artifacts found for %s/%s", tool, version.VersionString()))
+    "no known installable artifacts found for %s/%s", tool, version.ToString()))
 }
 
 /**
@@ -59,7 +208,7 @@ func FetchArchive(tool string, version *ToolVersion, artifact *ToolArtifact) (st
  */
 func CreateDockerWrapper(tool string, version *ToolVersion, artifact *ToolArtifact) (string, error) {
   // Prepare package dir
-  dir, err := PkgDir(tool, version, artifact)
+  dir, err := GetArchiveDir(tool, version, artifact)
   if err != nil {
     return "", err
   }
@@ -70,7 +219,7 @@ func CreateDockerWrapper(tool string, version *ToolVersion, artifact *ToolArtifa
   err = os.MkdirAll(dir, 0755)
   if err != nil {
     return "", errors.New(fmt.Sprintf(
-      "Could not create package dir: %s", err.Error()))
+      "could not create package dir: %s", err.Error()))
   }
 
   // First try to pull the image
@@ -78,7 +227,7 @@ func CreateDockerWrapper(tool string, version *ToolVersion, artifact *ToolArtifa
   err = PullDockerImage(artifact.Image, artifact.Tag)
   if err != nil {
     return "", errors.New(fmt.Sprintf(
-      "Could not pull the docker image %s", err.Error()))
+      "could not pull the docker image %s", err.Error()))
   }
 
   // Create wrapper script
@@ -86,14 +235,14 @@ func CreateDockerWrapper(tool string, version *ToolVersion, artifact *ToolArtifa
   err = ioutil.WriteFile(dir + "/docker-run.sh", dat, 0755)
   if err != nil {
     return "", errors.New(fmt.Sprintf(
-      "Could not create wrapper: %s", err.Error()))
+      "could not create wrapper: %s", err.Error()))
   }
 
   // Create a flag that indicates that the downloaded archive is ready for use
-  err = ioutil.WriteFile(dir + "/.ready", []byte("OK"), 0644)
+  err = CreateStateFlag(dir + "/.state", artifact)
   if err != nil {
     return "", errors.New(fmt.Sprintf(
-      "Could not set ready flag: %s", err.Error()))
+      "could not set ready flag: %s", err.Error()))
   }
 
   // Return the entrypoint
@@ -105,7 +254,7 @@ func CreateDockerWrapper(tool string, version *ToolVersion, artifact *ToolArtifa
  */
 func FetchGitArchive(tool string, version *ToolVersion, artifact *ToolArtifact) (string, error) {
   // Prepare package dir
-  dir, err := PkgDir(tool, version, artifact)
+  dir, err := GetArchiveDir(tool, version, artifact)
   if err != nil {
     return "", err
   }
@@ -115,7 +264,7 @@ func FetchGitArchive(tool string, version *ToolVersion, artifact *ToolArtifact) 
   err = os.MkdirAll(dir, 0755)
   if err != nil {
     return "", errors.New(fmt.Sprintf(
-      "Could not create package dir: %s", err.Error()))
+      "could not create package dir: %s", err.Error()))
   }
 
   // Git clone
@@ -125,7 +274,7 @@ func FetchGitArchive(tool string, version *ToolVersion, artifact *ToolArtifact) 
   })
   if err != nil {
     return "", errors.New(fmt.Sprintf(
-      "Could not clone git repository: %s", err.Error()))
+      "could not clone git repository: %s", err.Error()))
   }
 
   // Get entrypoint
@@ -138,14 +287,14 @@ func FetchGitArchive(tool string, version *ToolVersion, artifact *ToolArtifact) 
   // Make sure entrypoint exists
   if _, err := os.Stat(entrypointFile); os.IsNotExist(err) {
     return "", errors.New(fmt.Sprintf(
-      "Missing tool entrypoint: %s", entrypoint))
+      "missing tool entrypoint: %s", entrypoint))
   }
 
   // Create a flag that indicates that the downloaded archive is ready for use
-  err = ioutil.WriteFile(dir + "/.ready", []byte("OK"), 0644)
+  err = CreateStateFlag(dir + "/.state", artifact)
   if err != nil {
     return "", errors.New(fmt.Sprintf(
-      "Could not set ready flag: %s", err.Error()))
+      "could not set ready flag: %s", err.Error()))
   }
 
   return entrypointFile, nil
@@ -161,7 +310,7 @@ func FetchHttpArchive(tool string, version *ToolVersion, artifact *ToolArtifact)
   resp, err := client.Get(srcUrl)
   if err != nil {
     return "", errors.New(
-      fmt.Sprintf("Could not request %s: %s", srcUrl, err.Error()))
+      fmt.Sprintf("could not request %s: %s", srcUrl, err.Error()))
   }
   defer resp.Body.Close()
 
@@ -169,11 +318,11 @@ func FetchHttpArchive(tool string, version *ToolVersion, artifact *ToolArtifact)
   contentLength, err := strconv.Atoi(resp.Header.Get("Content-Length"))
   if err != nil {
     return "", errors.New(fmt.Sprintf(
-      "Could not parse Content-Length header: %s", err.Error()))
+      "could not parse Content-Length header: %s", err.Error()))
   }
 
   // Prepare package dir
-  dir, err := PkgDir(tool, version, artifact)
+  dir, err := GetArchiveDir(tool, version, artifact)
   if err != nil {
     return "", err
   }
@@ -183,7 +332,7 @@ func FetchHttpArchive(tool string, version *ToolVersion, artifact *ToolArtifact)
   err = os.MkdirAll(dir, 0755)
   if err != nil {
     return "", errors.New(fmt.Sprintf(
-      "Could not create package dir: %s", err.Error()))
+      "could not create package dir: %s", err.Error()))
   }
 
   // Split streams, so we can calculate the checksum AND extract
@@ -200,7 +349,7 @@ func FetchHttpArchive(tool string, version *ToolVersion, artifact *ToolArtifact)
   err = ExtractTarGz(bar.NewProxyReader(data), dir + "/")
   if err != nil {
     return "", errors.New(fmt.Sprintf(
-      "Could extract archive: %s", err.Error()))
+      "could extract archive: %s", err.Error()))
   }
 
   // Now validate checksum
@@ -220,14 +369,14 @@ func FetchHttpArchive(tool string, version *ToolVersion, artifact *ToolArtifact)
   // Make sure entrypoint exists
   if _, err := os.Stat(entrypointFile); os.IsNotExist(err) {
     return "", errors.New(fmt.Sprintf(
-      "Missing tool entrypoint: %s", entrypoint))
+      "missing tool entrypoint: %s", entrypoint))
   }
 
   // Create a flag that indicates that the downloaded archive is ready for use
-  err = ioutil.WriteFile(dir + "/.ready", []byte("OK"), 0644)
+  err = CreateStateFlag(dir + "/.state", artifact)
   if err != nil {
     return "", errors.New(fmt.Sprintf(
-      "Could not set ready flag: %s", err.Error()))
+      "could not set ready flag: %s", err.Error()))
   }
 
   return entrypointFile, nil

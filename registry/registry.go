@@ -28,6 +28,7 @@ func GetRegistry() (*Registry, error) {
     }
   }
 
+  // First try to load the file from disk, and if it failed, try web
   registryFile := fmt.Sprintf("%s/registry.json", registryPath)
   info, err = os.Stat(registryFile)
   if err != nil {
@@ -48,12 +49,12 @@ func GetRegistry() (*Registry, error) {
 func refreshRegistry(registryFile string) (*Registry, error) {
   reg, err := RegistryFromURL(GetRegistryURL())
   if err != nil {
-    return nil, err
+    return nil, errors.New("Unable to fetch registry: " + err.Error())
   }
 
   err = RegistryToDisk(reg, registryFile)
   if err != nil{
-    return nil, err
+    return nil, errors.New("Unable to save the new registry: " + err.Error())
   }
 
   return reg, nil
