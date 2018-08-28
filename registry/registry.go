@@ -32,12 +32,12 @@ func GetRegistry() (*Registry, error) {
   registryFile := fmt.Sprintf("%s/registry.json", registryPath)
   info, err = os.Stat(registryFile)
   if err != nil {
-    return refreshRegistry(registryFile)
+    return RefreshRegistry(registryFile)
   }
 
   registryAge := time.Since(info.ModTime())
   if registryAge > time.Hour {
-    return refreshRegistry(registryFile)
+    return RefreshRegistry(registryFile)
   }
 
   return RegistryFromDisk(registryFile)
@@ -46,7 +46,7 @@ func GetRegistry() (*Registry, error) {
 /**
  * Download a fresh registry
  */
-func refreshRegistry(registryFile string) (*Registry, error) {
+func RefreshRegistry(registryFile string) (*Registry, error) {
   reg, err := RegistryFromURL(GetRegistryURL())
   if err != nil {
     return nil, errors.New("Unable to fetch registry: " + err.Error())

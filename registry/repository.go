@@ -121,7 +121,7 @@ func GetArtifactEntrypoint(archiveDir string, artifact *ToolArtifact) (string, e
       "missing tool entrypoint: %s", entrypoint))
   }
 
-  return archiveDir, nil
+  return entrypointFile, nil
 }
 
 /**
