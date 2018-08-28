@@ -538,6 +538,28 @@
           ]
         }
       ]
+    },
+    "dcos-import-aws-cred": {
+      "topics": ["aws"],
+      "desc": "Imports your AWS credentials to the cluster",
+      "help": {
+        "text": "Imports your AWS credentials in your DC/OS cluster under the keys:\n\n  * /dev/AWS_ACCESS_KEY_ID\n  * /dev/AWS_SECRET_ACCESS_KEY"
+      },
+      "versions": [
+        {
+          "version": [0,0,1],
+          "artifacts": [
+            {
+              "source": {
+                "url": "https://raw.githubusercontent.com/vishnu2kmohan/dcos-toolbox/master/aws/setup-aws-secrets.sh",
+                "checksum": "5594c30450660c2f367701ac42f807f3521d3d1ebdaa7450878640224b03ac2d"
+              },
+              "extract": false,
+              "interpreter": "bash"
+            }
+          ]
+        }
+      ]
     }
   }
 }
