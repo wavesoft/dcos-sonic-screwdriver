@@ -48,7 +48,8 @@ func help() {
   fmt.Println("")
   fmt.Println("Management commands:")
   fmt.Println("  ss update")
-  fmt.Println("  ss uninstall")
+  fmt.Println("  ss upgrade")
+  fmt.Println("  ss version")
   fmt.Println("")
   os.Exit(2)
 }
@@ -412,6 +413,17 @@ func main() {
       } else {
         complete("You already run the latest version")
       }
+
+    ///
+    /// Update the database
+    ///
+    case "update":
+      fmt.Printf("Updating registry...\n")
+      _, err := registry.UpdateRegistry()
+      if err != nil {
+        die(err.Error())
+      }
+      complete("Registry is updated")
 
     ///
     /// Show the version

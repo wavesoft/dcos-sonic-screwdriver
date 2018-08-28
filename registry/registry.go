@@ -44,6 +44,28 @@ func GetRegistry() (*Registry, error) {
 }
 
 /**
+ * Force re-download registry
+ */
+func UpdateRegistry() (*Registry, error) {
+  registryPath, err := GetRegistryPath()
+  if err != nil {
+    return nil, err
+  }
+
+  // Prepare package dir
+  if _, err := os.Stat(registryPath); os.IsNotExist(err) {
+    err = os.MkdirAll(registryPath, 0755)
+    if err != nil {
+      return nil, err
+    }
+  }
+
+  // Refresh registry
+  registryFile := fmt.Sprintf("%s/registry.json", registryPath)
+  return RefreshRegistry(registryFile)
+}
+
+/**
  * Download a fresh registry
  */
 func RefreshRegistry(registryFile string) (*Registry, error) {
