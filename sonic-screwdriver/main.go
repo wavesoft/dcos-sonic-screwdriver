@@ -15,7 +15,7 @@ import (
  * The current (hard-coded) version
  */
 func GetVersion() registry.VersionInfo {
-  return registry.VersionInfo{0,1,1}
+  return registry.VersionInfo{0,1,0}
 }
 
 /**
@@ -429,7 +429,7 @@ func main() {
     /// Show the version
     ///
     case "v", "version":
-      fmt.Printf(GetVersion().ToString())
+      fmt.Println(GetVersion().ToString())
 
     default:
       fmt.Printf("Unknown action '%s'\n", flag.Arg(0))

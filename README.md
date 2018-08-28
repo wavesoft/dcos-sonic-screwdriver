@@ -12,7 +12,7 @@ Just install the binary in your system:
 
 ```
 curl -L -o /usr/local/bin/ss \
-  https://github.com/wavesoft/dcos-sonic-screwdriver/releases/download/v0.1.0/sonic-screwdriver && \
+  https://github.com/wavesoft/dcos-sonic-screwdriver/releases/download/v0.1.1/sonic-screwdriver.darwin && \
   chmod +x /usr/local/bin/ss 
 ```
 
