@@ -6,7 +6,23 @@ _DC/OS Sonic Screwdriver_ is a tool that installs to your desktop various utilit
 
 ## Installation
 
-Just get the binary for your platform from the releases folder.
+Just install the binary in your system:
+
+### For Mac OSX
+
+```
+curl -L -o /usr/local/bin/ss \
+  https://github.com/wavesoft/dcos-sonic-screwdriver/releases/download/v0.1.0/sonic-screwdriver && \
+  chmod +x /usr/local/bin/ss 
+```
+
+### For Linux
+
+WIP
+
+### For OSX
+
+WIP
 
 ## Usage
 
