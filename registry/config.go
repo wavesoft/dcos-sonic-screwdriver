@@ -34,7 +34,7 @@ func GetRegistryPath() (string, error) {
  * Get the location of the on-line registry
  */
 func GetRegistryURL() string {
-  return "http://127.0.0.1:8080/registry.json"
+  return "https://raw.githubusercontent.com/wavesoft/dcos-sonic-screwdriver/master/pub/registry.json"
 }
 
 /**

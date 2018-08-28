@@ -7,14 +7,18 @@ import (
   "os"
   "sort"
   "strings"
-  "github.com/mesosphere/dcos-toolbox-cli/registry"
+  "github.com/mesosphere/dcos-sonic-screwdriver/registry"
 )
 
+
 func banner() {
-  fmt.Printf("%s%s %s - A multi-tool for everything DC/OS\n",
+  VERSION := "0.1"
+
+  fmt.Printf("%s%s %s %s - A multi-tool for everything DC/OS\n",
     Bold(Magenta("Mesos")),
     Magenta("phere"),
-    Bold(Gray("Sonic Screwdriver")) )
+    Bold(Gray("Sonic Screwdriver")),
+    VERSION )
   fmt.Println("")
 }
 
