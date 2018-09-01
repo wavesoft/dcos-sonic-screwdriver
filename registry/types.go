@@ -86,18 +86,18 @@ type ArtifactRequirements []ArtifactRequirement
  */
 type DockerToolArtifact struct {
   Image       string                  `json:"image"`
-  Tag         string                  `json:"tag"`
-  DockerArgs  string                  `json:"dockerArgs"`
+  Tag         string                  `json:"tag,omitempty"`
+  DockerArgs  string                  `json:"dockerArgs,omitempty"`
 }
 
 type ExecutableToolArtifact struct {
   Source        WebSource             `json:"source"`
-  Require       ArtifactRequirements  `json:"require"`
-  Entrypoint    string                `json:"entrypoint"`
-  Arch          string                `json:"arch"`
-  Platform      string                `json:"platform"`
+  Require       ArtifactRequirements  `json:"require,omitempty"`
+  Entrypoint    string                `json:"entrypoint,omitempty"`
+  Arch          string                `json:"arch,omitempty"`
+  Platform      string                `json:"platform,omitempty"`
   Interpreter  *ExecutableInterpreter `json:"interpreter,omitempty"`
-  InstallScript string                `json:"installScript"`
+  InstallScript string                `json:"installScript,omitempty"`
 }
 
 type ToolArtifact struct {
@@ -114,7 +114,7 @@ type ToolArtifact struct {
 type ToolArtifacts []ToolArtifact
 
 type ToolVersion struct {
-  Version     VersionTriplet             `json:"version"`
+  Version     VersionTriplet          `json:"version"`
   Artifacts   ToolArtifacts           `json:"artifacts"`
 }
 
@@ -131,8 +131,8 @@ type ToolHelpText struct {
 }
 type ToolHelpURL struct {
   URL       string                    `json:"url"`
-  Inline    bool                      `json:"inline"`
-  Markdown  bool                      `json:"md"`
+  Inline    bool                      `json:"inline,omitempty"`
+  Markdown  bool                      `json:"md,omitempty"`
 }
 type ToolHelp struct {
   *ToolHelpText

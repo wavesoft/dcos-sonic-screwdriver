@@ -10,32 +10,30 @@ import (
  */
 func InterpreterIsValid(interpreter *registry.ExecutableInterpreter) bool {
   if (interpreter.PythonInterpreter != nil) {
-    return SysHasCommand(interpreter.Python)
+    return IsPythonInterpreterValid(interpreter)
+  }
+  if (interpreter.ShellInterpreter != nil) {
+    return IsShellInterpreterValid(interpreter)
   }
 
   return false
 }
 
 /**
- * Perform the required actions to prepare a sandbox for the interpreter
- */
-func PrepareInterpreterSandbox(sandboxPath string, interpreter *registry.ExecutableInterpreter) error {
-  if (interpreter.PythonInterpreter != nil) {
-    return PythonPrepareSandbox(sandboxPath, interpreter)
-  }
-
-  return fmt.Errorf("unknown interpreter specified")
-}
-
-/**
  * Return a wrapper script contents that runs the specified file
  */
-func GetInterpreterWrapperContents(sandboxPath string, entrypoint string, interpreter *registry.ExecutableInterpreter) []byte {
+func GetInterpreterWrapperContents(sandboxPath string,
+    toolDir string,
+    entrypoint string,
+    interpreter *registry.ExecutableInterpreter) ([]byte, error) {
   if (interpreter.PythonInterpreter != nil) {
-    return PythonCreateWrapper(sandboxPath, entrypoint, interpreter)
+    return PythonCreateWrapper(sandboxPath, toolDir, entrypoint, interpreter)
+  }
+  if (interpreter.ShellInterpreter != nil) {
+    return ShellCreateWrapper(sandboxPath, toolDir, entrypoint, interpreter)
   }
 
-  return nil
+  return nil, fmt.Errorf("unsupported interpreter")
 }
 
 /**

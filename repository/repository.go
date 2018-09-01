@@ -222,6 +222,9 @@ func (repo *Repository) InstallToolVersion(tool string,
   artifact *registry.ToolArtifact) (*InstalledVersion, error) {
   var err error
 
+  toolDir := repo.BaseDir + "/tools/" + SanitizedToolName(tool)
+  pkgBaseDir := repo.BaseDir + "/pkg"
+
   fmt.Printf("%s %s %s\n",
     Bold(Green("==> ")),
     Bold(Gray("Add")),
@@ -230,7 +233,11 @@ func (repo *Repository) InstallToolVersion(tool string,
   // Find or install the related tool artifact
   installedArtifact := repo.FindArtifact(artifact)
   if installedArtifact == nil {
-    installedArtifact, err = InstallArtifact(repo.BaseDir + "/pkg", artifact)
+    installedArtifact, err = InstallArtifact(
+      pkgBaseDir,
+      toolDir,
+      artifact,
+    )
     if err != nil {
       return nil, err
     }
@@ -240,7 +247,6 @@ func (repo *Repository) InstallToolVersion(tool string,
   }
 
   // Install the tool
-  toolDir := repo.BaseDir + "/tools/" + SanitizedToolName(tool)
   installedVersion, err := InstallToolVersion(
     toolDir,
     version,

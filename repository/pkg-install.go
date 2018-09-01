@@ -35,7 +35,7 @@ func RunInstallScript(pkgDir string, artifact *registry.ToolArtifact) error {
 /**
  * Download and install the source package from the given artifact
  */
-func InstallArtifact(pkgDir string, artifact *registry.ToolArtifact) (*InstalledArtifact, error) {
+func InstallArtifact(pkgDir string, toolDir string, artifact *registry.ToolArtifact) (*InstalledArtifact, error) {
   // If target directory already exists, wipe it and re-create it
   // NOTE: If this function is called, it means that the directory is NOT known
   //       to the system and therefore it should be considered wrong.
@@ -84,15 +84,6 @@ func InstallArtifact(pkgDir string, artifact *registry.ToolArtifact) (*Installed
     return nil, fmt.Errorf("unknown artifact type")
   }
 
-  // If it's an interpreter, prepare the sanebox
-  if (artifact.Interpreter != nil) {
-    fmt.Printf("%s %s %s\n", Blue("==> "), Gray("Preparing"), Bold(Gray("sandbox")))
-    err = PrepareInterpreterSandbox(dstDir, artifact.Interpreter)
-    if err != nil {
-      return nil, err
-    }
-  }
-
   // If there is an install script, run it now
   err = RunInstallScript(dstDir, artifact)
   if err != nil {
@@ -124,10 +115,10 @@ func InstallDockerArtifact(dstDir string, artifact *registry.ToolArtifact) error
  * Download & Install a Tar Archive
  */
 func InstallWebFileSource(dstDir string, artifact *registry.ToolArtifact) error {
-  fmt.Printf("%s %s %s\n", Blue("==> "), Gray("Downloading"), Bold(Gray(artifact.Source.TarURL)))
-  return Download(artifact.Source.TarURL, WithDefaults).
+  fmt.Printf("%s %s %s\n", Blue("==> "), Gray("Downloading"), Bold(Gray(artifact.Source.FileURL)))
+  return Download(artifact.Source.FileURL, WithDefaults).
          AndShowProgress("").
-         AndValidateChecksum(artifact.Source.TarChecksum).
+         AndValidateChecksum(artifact.Source.FileChecksum).
          AndDecompressIfCompressed().
          EventuallyWriteTo(dstDir + "/run")
 }
@@ -252,18 +243,21 @@ func CreateInterpreterWrapper(toolDir string,
   pkgDir := installedArtifact.Folder
   entryPoint := artifact.Entrypoint
   if entryPoint == "" {
-    entryPoint = "/run"
+    entryPoint = "run"
   }
 
   // Create wrapper script
-  dat := GetInterpreterWrapperContents(pkgDir, entryPoint, artifact.Interpreter)
-  if dat == nil {
-    return fmt.Errorf("could not populate wrapper contents")
+  dat, err := GetInterpreterWrapperContents(
+    pkgDir,
+    toolDir,
+    entryPoint,
+    artifact.Interpreter,
+  )
+  if err != nil {
+    return fmt.Errorf("could not create wrapper: %s", err.Error())
   }
 
-  fmt.Printf("contents=%s", string(dat))
-
-  err := ioutil.WriteFile(execPath, dat, 0755)
+  err = ioutil.WriteFile(execPath, dat, 0755)
   if err != nil {
     return fmt.Errorf("could not create wrapper: %s", err.Error())
   }
@@ -281,7 +275,7 @@ func CreateBinaryWrapper(toolDir string,
   pkgDir := installedArtifact.Folder
   entryPoint := artifact.Entrypoint
   if entryPoint == "" {
-    entryPoint = "/run"
+    entryPoint = "run"
   }
 
   execPath := pkgDir + "/" + entryPoint

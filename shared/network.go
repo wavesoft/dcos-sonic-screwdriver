@@ -399,6 +399,15 @@ func (stream NetworkStreamChain) EventuallyReadAll() ([]byte, error) {
     return nil, stream.Err
   }
 
-  defer stream.Close()
-  return ioutil.ReadAll(stream.Reader)
+  byt, err := ioutil.ReadAll(stream.Reader)
+  if err != nil {
+    return nil, err
+  }
+
+  err = stream.Close()
+  if err != nil {
+    return nil, err
+  }
+
+  return byt, nil
 }

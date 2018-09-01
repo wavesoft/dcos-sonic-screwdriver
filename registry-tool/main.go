@@ -167,10 +167,15 @@ func main() {
   switch flag.Arg(0) {
 
     //
+    // Add a tool on the registry
+    //
+    case "a", "add":
+      return
+
+    //
     // Sign the existing registry
     //
     case "s", "sign":
-
       saveAndSign(reg, registryPath, *fKey)
       complete("Signature saved on " + registryPath + ".sig")
 
