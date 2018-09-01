@@ -15,6 +15,9 @@ func InterpreterIsValid(interpreter *registry.ExecutableInterpreter) bool {
   if (interpreter.ShellInterpreter != nil) {
     return IsShellInterpreterValid(interpreter)
   }
+  if (interpreter.JavaInterpreter != nil) {
+    return IsJavaInterpreterValid(interpreter)
+  }
 
   return false
 }
@@ -32,6 +35,9 @@ func GetInterpreterWrapperContents(sandboxPath string,
   if (interpreter.ShellInterpreter != nil) {
     return ShellCreateWrapper(sandboxPath, toolDir, entrypoint, interpreter)
   }
+  if (interpreter.JavaInterpreter != nil) {
+    return JavaCreateWrapper(sandboxPath, toolDir, entrypoint, interpreter)
+  }
 
   return nil, fmt.Errorf("unsupported interpreter")
 }
@@ -45,6 +51,9 @@ func InterpreterName(interpreter *registry.ExecutableInterpreter) string {
   }
   if (interpreter.ShellInterpreter != nil) {
     return interpreter.Shell
+  }
+  if (interpreter.JavaInterpreter != nil) {
+    return "java"
   }
 
   return "unknown"

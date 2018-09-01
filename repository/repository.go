@@ -93,6 +93,14 @@ func LoadRepository(baseDir string) (*Repository, error) {
   toolDir := baseDir + "/tools"
   pkgDir := baseDir + "/pkg"
 
+  // Skip missing dirs
+  if _, err := os.Stat(toolDir); err != nil {
+    return repository, nil
+  }
+  if _, err := os.Stat(pkgDir); err != nil {
+    return repository, nil
+  }
+
   // List versions
   files, err := ioutil.ReadDir(toolDir)
   if err != nil {

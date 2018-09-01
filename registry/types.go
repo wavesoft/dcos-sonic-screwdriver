@@ -27,8 +27,13 @@ type PythonInterpreter struct {
   InstReq         string        `json:"installRequirements,omitempty"`
   InstPip         string        `json:"installPip,omitempty"`
 }
+type JavaInterpreter struct {
+  Java            string        `json:"java"`
+  JavaArgs        string        `json:"javaArgs,omitempty"`
+}
 
 type ExecutableInterpreter struct {
+  *JavaInterpreter
   *PythonInterpreter
   *ShellInterpreter
 }
