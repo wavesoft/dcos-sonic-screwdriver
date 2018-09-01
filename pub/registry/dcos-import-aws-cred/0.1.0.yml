@@ -1,0 +1,9 @@
+---
+artifacts:
+  - type: executable
+    interpreter:
+      shell: bash
+    source:
+      type: file
+      url: https://raw.githubusercontent.com/vishnu2kmohan/dcos-toolbox/master/aws/setup-aws-secrets.sh
+      checksum: 5594c30450660c2f367701ac42f807f3521d3d1ebdaa7450878640224b03ac2d

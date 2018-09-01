@@ -1,0 +1,11 @@
+---
+desc: Imports your AWS credentials to the cluster
+topics:
+  - aws
+  - deployment
+help:
+  text: |
+    Imports your AWS credentials in your DC/OS cluster under the keys:
+
+    * /dev/AWS_ACCESS_KEY_ID
+    * /dev/AWS_SECRET_ACCESS_KEY

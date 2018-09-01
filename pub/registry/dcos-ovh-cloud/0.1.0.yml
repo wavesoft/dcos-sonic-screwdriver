@@ -1,0 +1,10 @@
+---
+artifacts:
+  - type: executable
+    interpreter:
+      python: python3
+      installRequirements: requirements.txt
+    source:
+      type: vcs/git
+      url: https://github.com/lloesche/dcos-ovh-cloud.git
+    entrypoint: dcos_ovhcloud_installer.py

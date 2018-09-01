@@ -2,7 +2,6 @@ package registry
 
 import (
   "encoding/json"
-  "errors"
   "fmt"
   "crypto/rsa"
   "io/ioutil"
@@ -65,13 +64,13 @@ func RefreshRegistry(registryFile string, registryUrl string, pub *rsa.PublicKey
   // Download the latest registry
   reg, err := RegistryFromURL(registryUrl, pub)
   if err != nil {
-    return nil, errors.New("Unable to fetch registry: " + err.Error())
+    return nil, fmt.Errorf("Unable to fetch registry: %s", err.Error())
   }
 
   // Write cached version of the registry
   err = RegistryToDisk(reg, registryFile)
   if err != nil{
-    return nil, errors.New("Unable to save the new registry: " + err.Error())
+    return nil, fmt.Errorf("Unable to save the new registry: %s", err.Error())
   }
 
   return reg, nil
@@ -88,6 +87,11 @@ func ParseRegistry(byt []byte) (*Registry, error) {
     return nil, err
   }
 
+  // Make sure version is 1
+  if reg.Version != 1 {
+    return nil, fmt.Errorf("unsupported registry version %d", reg.Version)
+  }
+
   return reg, nil
 }
 
@@ -97,7 +101,7 @@ func ParseRegistry(byt []byte) (*Registry, error) {
 func RegistryFromDisk(s string) (*Registry, error) {
   byt, err := ioutil.ReadFile(s)
   if (err != nil) {
-    return nil, errors.New("Error loading registry: " + err.Error())
+    return nil, fmt.Errorf("Error loading registry: %s", err.Error())
   }
 
   return ParseRegistry(byt)
@@ -116,7 +120,7 @@ func RegistryToBytes(reg *Registry) ([]byte, error) {
 func RegistryToDisk(reg *Registry, s string) error {
   bytes, err := RegistryToBytes(reg)
   if err != nil {
-    return errors.New("Error saving registry: " + err.Error())
+    return fmt.Errorf("Error saving registry: %s", err.Error())
   }
 
   return ioutil.WriteFile(s, bytes, 0644)
@@ -131,15 +135,16 @@ func RegistryFromURL(s string, pub *rsa.PublicKey) (*Registry, error) {
   byt, err := Download(s + ".sig", WithDefaults).
               EventuallyReadAll()
   if err != nil {
-    return nil, errors.New("unable to obtain registry signature: " + err.Error())
+    return nil, fmt.Errorf("signature error: %s", err.Error())
   }
 
   // Download latest version
   byt, err = Download(s, WithDefaults).
+             AndDecompressIfCompressed().
              AndValidatePSSSignature(byt, pub).
              EventuallyReadAll()
   if err != nil {
-    return nil, errors.New("unable to update registry: " + err.Error())
+    return nil, fmt.Errorf("download error: %s", err.Error())
   }
 
   return ParseRegistry(byt)

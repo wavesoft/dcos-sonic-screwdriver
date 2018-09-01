@@ -36,8 +36,8 @@ func banner() {
 func help() {
   banner()
   fmt.Println("Typical usage:")
-  fmt.Println("  registry-tool -f [regsitry.json] add [TOOL]")
-  fmt.Println("  registry-tool -f [regsitry.json] add [TOOL]")
+  fmt.Println("  registry-tool -f [regsitry.json] -k [private.pem] sign")
+  fmt.Println("  registry-tool -f [regsitry.json] -k [private.pem] -d [tools/dir] update")
   fmt.Println("")
   os.Exit(2)
 }
@@ -150,16 +150,11 @@ func saveAndSign(reg *registry.Registry, registryPath string, fKey string) {
  */
 func main() {
   fRegistry := flag.String("f", "../pub/registry.json", "Path to the registry file")
+  fRegistryFolder := flag.String("d", "../pub/registry", "Path to the tools directory")
   fKey := flag.String("k", "../pub/private.pem", "Path to the private key file")
   flag.Parse()
   if flag.NArg() < 1 {
     help()
-  }
-
-  registryPath := getRegistryPath(*fRegistry)
-  reg, err := registry.RegistryFromDisk(registryPath)
-  if err != nil {
-    die(err.Error())
   }
 
 
@@ -167,15 +162,39 @@ func main() {
   switch flag.Arg(0) {
 
     //
-    // Add a tool on the registry
+    // Update the registry by reading the tools folder
     //
-    case "a", "add":
+    case "u", "update":
+
+      // Load tools registry
+      reg, err := LoadRegistryFromFolder(*fRegistryFolder)
+      if err != nil {
+        die(err.Error())
+      }
+
+      // Configure settings
+      reg.Version = 1
+      reg.ToolVersion = VersionTriplet{0,1,2}
+
+      // Save and sign
+      registryPath := getRegistryPath(*fRegistry)
+      saveAndSign(reg, registryPath, *fKey)
+
       return
 
     //
     // Sign the existing registry
     //
     case "s", "sign":
+
+      // Load JSON registry
+      registryPath := getRegistryPath(*fRegistry)
+      reg, err := registry.RegistryFromDisk(registryPath)
+      if err != nil {
+        die(err.Error())
+      }
+
+      // Save and sign
       saveAndSign(reg, registryPath, *fKey)
       complete("Signature saved on " + registryPath + ".sig")
 

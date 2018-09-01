@@ -1,0 +1,10 @@
+---
+artifacts:
+  - type: executable
+    interpreter:
+      shell: python3
+      installPip: "."
+    source:
+      type: vcs/git
+      url: https://github.com/mesosphere/dcos-perf-test-driver.git
+    entrypoint: dcos-perf-test-driver.py

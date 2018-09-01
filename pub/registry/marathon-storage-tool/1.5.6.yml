@@ -1,0 +1,5 @@
+---
+artifacts:
+  - type: docker
+    image: mesosphere/marathon-storage-tool
+    tag: "1.5.6"

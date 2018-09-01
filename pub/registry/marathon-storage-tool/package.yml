@@ -1,0 +1,10 @@
+---
+desc: View and modify Marathon state directly in Zookeeper
+topics:
+  - marathon
+  - recovery
+  - zookeeper
+help:
+  url: https://raw.githubusercontent.com/mesosphere/marathon-storage-tool/master/README.md
+  inline: yes
+  md: yes

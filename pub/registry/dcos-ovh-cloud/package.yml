@@ -1,0 +1,8 @@
+---
+desc: Spin up a bunch of VMs in the OVH cloud and install DC/OS on them
+topics:
+  - deploy
+  - cluster
+  - dcos
+help:
+  url: https://github.com/lloesche/dcos-ovh-cloud

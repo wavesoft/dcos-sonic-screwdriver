@@ -529,7 +529,11 @@ func main() {
       if toolInfo.Help.ToolHelpText != nil {
         fmt.Printf("--=[ %s ]=--\n", Bold(Gray(tool)))
         fmt.Println("")
-        fmt.Println(toolInfo.Help.Text)
+        if toolInfo.Help.Markdown {
+          PrintMarkdownText(toolInfo.Help.Text)
+        } else {
+          fmt.Println(toolInfo.Help.Text)
+        }
         return
       } else if toolInfo.Help.ToolHelpURL != nil {
         if toolInfo.Help.Inline {
