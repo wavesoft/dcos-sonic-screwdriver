@@ -1,8 +1,0 @@
----
-desc: A test harness for running performance tests
-topics:
-  - testing
-  - audit
-  - performance
-help:
-  url: https://dcos-performance-test-driver.readthedocs.io/en/latest/
