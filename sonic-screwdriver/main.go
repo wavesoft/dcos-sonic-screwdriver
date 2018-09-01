@@ -5,10 +5,10 @@ import (
   "flag"
   "fmt"
   "github.com/briandowns/spinner"
+  "github.com/dustin/go-humanize"
   "github.com/mesosphere/dcos-sonic-screwdriver/registry"
   "github.com/mesosphere/dcos-sonic-screwdriver/repository"
   "github.com/pkg/browser"
-  "github.com/dustin/go-humanize"
   "os"
   "sort"
   "strings"
@@ -17,7 +17,7 @@ import (
   . "github.com/mesosphere/dcos-sonic-screwdriver/shared"
 )
 
-var VERSION registry.VersionTriplet = registry.VersionTriplet{0,1,2}
+var VERSION VersionTriplet = VersionTriplet{0,1,2}
 var AlreadyUpgraded = errors.New("You already run the latest version")
 
 /**
@@ -90,7 +90,10 @@ func getRegistry(config *ScrewdriverConfig) *registry.Registry {
   // Load registry (could be slower)
   spinner := spinner.New(spinner.CharSets[13], 100*time.Millisecond)
   spinner.Start()
-  reg, err := registry.GetRegistry(config.DataDir, config.RegistryURL)
+  reg, err := registry.GetRegistry(
+    config.DataDir,
+    config.RegistryURL,
+    config.RegistryPubKey)
   if err != nil {
     spinner.Stop()
     die(err.Error())
@@ -356,7 +359,7 @@ func main() {
       } else {
 
         // Parse version
-        verTriplet, err := registry.VersionFromString(*fVersion)
+        verTriplet, err := VersionFromString(*fVersion)
         if err != nil {
           die(fmt.Sprintf("invalid version: %s", *fVersion))
         }
@@ -531,13 +534,13 @@ func main() {
       } else if toolInfo.Help.ToolHelpURL != nil {
         if toolInfo.Help.Inline {
           fmt.Printf("--=[ %s ]=--\n", Bold(Gray(tool)))
-          contents, err := registry.DownloadHelpText(toolInfo.Help.URL)
+          contents, err := DownloadHelpText(toolInfo.Help.URL)
           if err != nil {
             die(err.Error())
           }
 
           if toolInfo.Help.Markdown {
-            registry.PrintMarkdownText(contents)
+            PrintMarkdownText(contents)
           } else {
             fmt.Printf("%s\n", contents)
           }
@@ -565,7 +568,10 @@ func main() {
     ///
     case "update":
       fmt.Printf("Updating registry...\n")
-      _, err := registry.RefreshRegistry(config.DataDir, config.RegistryURL)
+      _, err := registry.UpdateRegistry(
+        config.DataDir,
+        config.RegistryURL,
+        config.RegistryPubKey)
       if err != nil {
         die(err.Error())
       }

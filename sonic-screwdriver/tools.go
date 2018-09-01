@@ -1,4 +1,4 @@
-package registry
+package main
 
 import (
   "github.com/russross/blackfriday"

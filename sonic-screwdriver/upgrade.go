@@ -3,7 +3,6 @@ package main
 import (
   "encoding/json"
   "fmt"
-  "github.com/mesosphere/dcos-sonic-screwdriver/registry"
   "time"
   "os"
   "os/exec"
@@ -13,7 +12,7 @@ import (
 
 
 type LatestVersion struct {
-  Version     registry.VersionTriplet
+  Version     VersionTriplet
   URL         string
 }
 
@@ -65,7 +64,7 @@ func GetLatestVersion() (LatestVersion, error) {
     return res, fmt.Errorf("could not find a download URL")
   }
 
-  ver, err := registry.VersionFromString(tagName[1:])
+  ver, err := VersionFromString(tagName[1:])
   if err != nil {
     return res, err
   }

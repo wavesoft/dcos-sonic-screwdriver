@@ -42,7 +42,7 @@ func LoadRepositoryTool(toolDir string,
 
       // Parse version
       versionDir := toolDir + "/" + f.Name()
-      version, err := registry.VersionFromString(parts[0])
+      version, err := VersionFromString(parts[0])
       if err != nil {
         return tool, fmt.Errorf("Could not parse tool '%s' version '%s': %s",
           filepath.Base(toolDir), f.Name(), err.Error())
@@ -114,7 +114,7 @@ func LoadRepository(baseDir string) (*Repository, error) {
  * Find the version of the specified tool
  */
 func (repo *Repository) FindToolVersion(tool string,
-  version registry.VersionTriplet) *InstalledVersion {
+  version VersionTriplet) *InstalledVersion {
 
   if tool, ok := repo.Tools[tool]; ok {
     return tool.FindVersion(version)
@@ -126,7 +126,7 @@ func (repo *Repository) FindToolVersion(tool string,
 /**
  * Scan the list of versions and find the given version
  */
-func (tool *InstalledTool) FindVersion(version registry.VersionTriplet) *InstalledVersion {
+func (tool *InstalledTool) FindVersion(version VersionTriplet) *InstalledVersion {
   for _, ver := range tool.Versions {
     if ver.Version.Equals(version) {
       return &ver
@@ -203,7 +203,7 @@ func (repo *InstalledTool) HasInstalledVersions() bool {
 /**
  * Check if a specific tool version exists
  */
-func (repo *Repository) IsToolVersionInstalled(tool string, version *registry.VersionTriplet) bool {
+func (repo *Repository) IsToolVersionInstalled(tool string, version *VersionTriplet) bool {
   if toolRef, ok := repo.Tools[tool]; ok {
     for _, x := range toolRef.Versions {
       if x.Version.Equals(*version) {

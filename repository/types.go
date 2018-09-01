@@ -5,6 +5,7 @@ import (
   "crypto/sha256"
   "encoding/hex"
   "fmt"
+  . "github.com/mesosphere/dcos-sonic-screwdriver/shared"
 )
 
 /**
@@ -20,7 +21,7 @@ type InstalledArtifact struct {
  * A version of an installed tool in the repository
  */
 type InstalledVersion struct {
-  Version     registry.VersionTriplet
+  Version     VersionTriplet
   Artifact    *InstalledArtifact
   Folder      string
 }

@@ -5,6 +5,8 @@ import (
   "bufio"
   "compress/bzip2"
   "compress/gzip"
+  "crypto"
+  "crypto/rsa"
   "crypto/sha256"
   "encoding/hex"
   "fmt"
@@ -38,6 +40,7 @@ type DownloadFlags int
 const (
    WithDefaults         DownloadFlags = 0
    WithoutCompression   DownloadFlags = 1
+   IgnoreErrors         DownloadFlags = 2
 )
 
 /**
@@ -70,6 +73,20 @@ func Download(url string, flags DownloadFlags) NetworkStreamChain {
     }
   }
 
+  // Fail on error resources
+  if (flags & IgnoreErrors) == 0 {
+    if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+      return NetworkStreamChain{
+        nil,
+        fmt.Errorf("server responded with: %s", resp.Status),
+        StreamMeta{},
+        func () error {
+          return resp.Body.Close()
+        },
+      }
+    }
+  }
+
   // Parse Content-Length header
   contentLength, err := strconv.Atoi(resp.Header.Get("Content-Length"))
   if err != nil {
@@ -88,7 +105,7 @@ func Download(url string, flags DownloadFlags) NetworkStreamChain {
       contentEncoding,
     },
     func () error {
-      return nil
+      return resp.Body.Close()
     },
   }
 }
@@ -121,6 +138,43 @@ func (stream NetworkStreamChain) AndValidateChecksum(checksum string) NetworkStr
       csum := hex.EncodeToString(hasher.Sum(nil))
       if csum != checksum {
         return fmt.Errorf("invalid content checksum")
+      }
+
+      return nil
+    },
+  }
+}
+
+/**
+ * Also validate the signature
+ */
+func (stream NetworkStreamChain) AndValidatePSSSignature(sig []byte, pub *rsa.PublicKey) NetworkStreamChain {
+  if stream.Err != nil {
+    return stream
+  }
+
+  // Split streams, so we can calculate the checksum AND extract
+  // while at the same time downloading the file.
+  hasher := sha256.New()
+  proxyReader := io.TeeReader(stream.Reader, hasher)
+
+  // Return chain
+  return NetworkStreamChain{
+    proxyReader,
+    nil,
+    stream.Meta,
+    func () error {
+      err := stream.Close()
+      if err != nil {
+        return err
+      }
+
+      // Verify PSS signature
+      var opts rsa.PSSOptions
+      sum := hasher.Sum(nil)
+      err = rsa.VerifyPSS(pub, crypto.SHA256, sum, sig, &opts)
+      if err != nil {
+        return fmt.Errorf("content signature cannot be verified")
       }
 
       return nil

@@ -1,4 +1,4 @@
-package registry
+package main
 
 // Clone from https://github.com/samfoo/mdcat/blob/master/renderer.go
 // since the package cannot be imported
