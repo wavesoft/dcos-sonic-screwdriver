@@ -1,22 +1,27 @@
 package main
 
 import (
+  "errors"
   "flag"
   "fmt"
+  "github.com/briandowns/spinner"
   "github.com/mesosphere/dcos-sonic-screwdriver/registry"
+  "github.com/mesosphere/dcos-sonic-screwdriver/repository"
   "github.com/pkg/browser"
+  "github.com/dustin/go-humanize"
   "os"
   "sort"
   "strings"
+  "time"
   . "github.com/logrusorgru/aurora"
+  . "github.com/mesosphere/dcos-sonic-screwdriver/shared"
 )
 
+var VERSION registry.VersionTriplet = registry.VersionTriplet{0,1,2}
+var AlreadyUpgraded = errors.New("You already run the latest version")
+
 /**
- * The current (hard-coded) version
  */
-func GetVersion() registry.VersionInfo {
-  return registry.VersionInfo{0,1,0}
-}
 
 /**
  * Display banner
@@ -26,7 +31,7 @@ func banner() {
     Bold(Magenta("Mesos")),
     Magenta("phere"),
     Bold(Gray("Sonic Screwdriver")),
-    GetVersion().ToString() )
+    VERSION.ToString() )
   fmt.Println("")
 }
 
@@ -74,28 +79,106 @@ func complete(msg string) {
  * Pad message with the remaining tabs until we reach 32 characters-wide
  */
 func wideTab(msg string) string {
-  tabs := (32 - len(msg)) / 8
+  tabs := (40 - len(msg)) / 8
   return msg + strings.Repeat("\t", tabs)
 }
 
+// /**
+//  * Search the given version into the list of installed versions and return
+//  * the matched installed version
+//  */
+// func findInstalledVersion(installedVersions registry.InstalledVersions,
+//     searchVer registry.VersionTriplet) *registry.InstalledVersion {
+//   if len(installedVersions) == 0 {
+//     return nil
+//   }
+
+//   // If the version we want is already cached, just switch the link there
+//   for _, isntVer := range installedVersions {
+//     if isntVer.Version.Equals(searchVer) {
+//       return &isntVer
+//     }
+//   }
+
+//   return nil
+// }
+
 /**
- * Search the given version into the list of installed versions and return
- * the matched installed version
+ * Load the registry  pair and exit on errors
  */
-func findInstalledVersion(installedVersions registry.InstalledVersions,
-    searchVer registry.VersionInfo) *registry.InstalledVersion {
-  if len(installedVersions) == 0 {
-    return nil
+func getRegistry(config *ScrewdriverConfig) *registry.Registry {
+  // Load registry (could be slower)
+  spinner := spinner.New(spinner.CharSets[13], 100*time.Millisecond)
+  spinner.Start()
+  reg, err := registry.GetRegistry(config.DataDir)
+  if err != nil {
+    spinner.Stop()
+    die(err.Error())
+  }
+  spinner.Stop()
+  checkMinToolVersion(reg)
+
+  return reg
+}
+
+/**
+ * Load the registry + repository pair and exit on errors
+ */
+func getRegistryRepository(config *ScrewdriverConfig) (*registry.Registry, *repository.Repository) {
+  // Load repository (should be fast)
+  repo, err := repository.LoadRepository(config.DataDir)
+  if err != nil {
+    die(err.Error())
   }
 
-  // If the version we want is already cached, just switch the link there
-  for _, isntVer := range installedVersions {
-    if isntVer.Version.Equals(searchVer) {
-      return &isntVer
+  // Load registry (could be slower)
+  reg := getRegistry(config)
+
+  // Return tuple
+  return reg, repo
+}
+
+/**
+ * Perform a fully automated tool upgrade
+ */
+func upgradeTool() error {
+  spinner := spinner.New(spinner.CharSets[13], 100*time.Millisecond)
+  spinner.Start()
+  lastVersion, err := GetLatestVersion()
+  if err != nil {
+    spinner.Stop()
+    return err
+  }
+  spinner.Stop()
+
+  // Check if there is a new version to upgrade
+  if lastVersion.Version.GraterThan(&VERSION) {
+    fmt.Printf("%s %s from %s -> to %s\n",
+      Magenta("==>"),
+      Bold(Gray("Upgrading")),
+      VERSION.ToString(),
+      lastVersion.Version.ToString())
+
+    // Perform upgrade and check for errors
+    err := PerformUpgrade(lastVersion)
+    if err != nil {
+      return err
+    } else {
+      complete("Upgraded to version " + lastVersion.Version.ToString())
+      return nil
     }
   }
 
-  return nil
+  return AlreadyUpgraded
+}
+
+/**
+ * Check if the registry is targeting a newer tool version
+ */
+func checkMinToolVersion(reg *registry.Registry) {
+  if reg.ToolVersion.GraterThan(&VERSION) {
+    die("👴🏻  Your tool is outdated, try `ss upgrade` to get the latest version.")
+  }
 }
 
 /**
@@ -112,8 +195,43 @@ func main() {
     help()
   }
 
+  config, err := GetDefaultConfig()
+  if err != nil {
+    die(err.Error())
+  }
+
   // Check actions
   switch flag.Arg(0) {
+
+    case "test":
+      repository, err := repository.LoadRepository(config.DataDir)
+      if err != nil {
+        die(err.Error())
+      }
+      fmt.Printf("repo=%s\n", repository)
+
+      artifact, err := repository.Tools["marathon-storage-tool"].Versions[0].Artifact.GetRegistryArtifact()
+      if err != nil {
+        die(err.Error())
+      }
+      fmt.Printf("artifact=%s\n", artifact)
+
+      // Download the archive
+      err = Download("https://github.com/wavesoft/dot-dom/archive/0.2.2.tar.gz", WithDefaults).
+            AndShowProgress("Downloading").
+            AndValidateChecksum("1ad0ee9ef8debb1bdccda28073453834d995434f3d211b51bc0e02054a428ad7").
+            AndDecompressIfCompressed().
+            EventuallyUntarTo("/Users/icharala/Develop/test/docs/xxx/", 1)
+      if err != nil {
+        die(err.Error())
+      }
+
+      // reg, err := registry.GetRegistry(config.DataDir)
+      // if err != nil {
+      //   die(err.Error())
+      // }
+      // fmt.Printf("tools=%s\n", reg.Tools["dcos-import-aws-cred"].Name)
+
 
     ///
     /// Complete upgrade (Called by the upgrade tool)
@@ -130,11 +248,8 @@ func main() {
         help()
       }
 
-      // Load registry
-      reg, err := registry.GetRegistry()
-      if err != nil {
-        die(err.Error())
-      }
+      // Load registry and repository
+      reg, repo := getRegistryRepository(config)
 
       // Lookup tool
       tool := flag.Arg(1)
@@ -155,52 +270,56 @@ func main() {
 
       // Find the first artifact that can be executed on our current system
       // configuration (CPU architecture, installed interpreters or docker)
-      artifact, err := registry.FindFirstRunableArtifact(version)
+      artifact, err := repository.FindFirstRunableArtifact(version.Artifacts)
       if err != nil {
         die(fmt.Sprintf("%s: %s", tool, err.Error()))
       }
 
-      // Get installed versions
-      installedVersions, err := registry.GetInstalledVersions(tool)
+      // Check if there is already a symlink for this tool
+      symlinkTarget, err := ReadBinSymlink(config, tool)
       if err != nil {
         die(fmt.Sprintf("%s: %s", tool, err.Error()))
       }
 
-      installedVersion := findInstalledVersion(installedVersions, version.Version)
-      if installedVersion != nil {
-        currentEntrypoint, err := registry.ReadBinSymlink(tool)
-        if err != nil || currentEntrypoint != installedVersion.Entrypoint {
-          registry.RemoveBinSymlink(tool)
-          err = registry.CreateBinSymlink(installedVersion.Entrypoint, tool)
-          if err != nil {
-            die(fmt.Sprintf("%s: %s", tool, err.Error()))
+      // Check if we have a tool already installed on this symlink
+      if symlinkTarget != "" {
+        symlinkedTool, symlinkedVersion := repo.FindToolFromLink(symlinkTarget)
+
+        // If we have a symlink, but we don't have a tool installed on this
+        // symlink target, we are most probably going to touch something that
+        // does not belong to us... warn the user
+        if symlinkedTool == nil {
+          if HasBinSymlink(config, tool) && !*fForce {
+            die("There is already a tool with the same name in your path. Not installing.")
           }
-          complete(fmt.Sprintf("switched %s to %s!", tool, version.ToString()))
         } else {
-          complete(fmt.Sprintf("%s/%s is already there!", tool, version.ToString()))
-        }
 
-        return;
-      }
+          // If the linked version is desired version, we are good
+          if symlinkedVersion.Version.Equals(version.Version) {
+            complete(fmt.Sprintf("%s/%s is already there!", tool, version.ToString()))
+          }
 
-      // If we have nothing installed, but there is a symlink, bail because
-      // this could overwrite something that we didn't put there
-      if len(installedVersions) == 0 {
-        if registry.HasBinSymlink(tool) && !*fForce {
-          die("There is already a tool with the same name in your path. Not installing.")
+          // Check if we have the target version already installed, and if
+          // we have it, switch link target to the installed version
+          targetVersion := repo.FindToolVersion(tool, version.Version)
+          if targetVersion != nil {
+            err = CreateBinSymlink(config, targetVersion.GetExecutablePath(), tool)
+            if err != nil {
+              die(fmt.Sprintf("%s: %s", tool, err.Error()))
+            }
+            complete(fmt.Sprintf("switched %s to %s!", tool, version.ToString()))
+          }
         }
       }
 
       // Download the archive
-      fmt.Printf("%s %s %s\n", Bold(Green("==> ")), Bold(Gray("Add")), Bold(Green(tool)))
-      toolPath, err := registry.FetchArchive(tool, &version.Version, artifact)
+      installedVer, err := repo.InstallToolVersion(tool, version, artifact)
       if err != nil {
         die(fmt.Sprintf("%s: %s", tool, err.Error()))
       }
 
       // Install symbolic link
-      registry.RemoveBinSymlink(tool)
-      err = registry.CreateBinSymlink(toolPath, tool)
+      err = CreateBinSymlink(config, installedVer.GetExecutablePath(), tool)
       if err != nil {
         die(fmt.Sprintf("%s: %s", tool, err.Error()))
       }
@@ -216,36 +335,86 @@ func main() {
         help()
       }
 
-      // Remove symbolic link
+      // Load repository (should be fast)
+      repo, err := repository.LoadRepository(config.DataDir)
+      if err != nil {
+        die(err.Error())
+      }
+
+      // Check if we have neither a symlink, nor a tool
       tool := flag.Arg(1)
-      if registry.IsToolInstalled(tool) || registry.HasBinSymlink(tool) {
-        fmt.Printf("%s %s %s\n", Bold(Red("==> ")), Bold(Gray("Remove")), Bold(Red(tool)))
-      } else {
+      if !repo.IsToolInstalled(tool) && !HasBinSymlink(config, tool) {
         complete(fmt.Sprintf("%s is not installed", tool))
       }
 
-      // Remove files and links
-      if registry.HasBinSymlink(tool) {
-        registry.RemoveBinSymlink(tool)
-      }
-      if registry.IsToolInstalled(tool) {
+      // If the user has not requested the removal of a specific version,
+      // remove everything
+      if *fVersion == "" {
 
-        // Remove all artifacts individually
-        installedVersions, err := registry.GetInstalledVersions(tool)
-        if err != nil {
-          die(fmt.Sprintf("%s: %s", tool, err.Error()))
+        // If we have a tray symlink, remove it
+        if HasBinSymlink(config, tool) {
+          RemoveBinSymlink(config, tool)
         }
-        if len(installedVersions) > 0 {
-          for _, isntVer := range installedVersions {
-            registry.RemoveArtifact(tool, &isntVer.Version, &isntVer.Artifact)
+
+        // Remove all tool versions
+        if toolRef, ok := repo.Tools[tool]; ok {
+          for _, versionRef := range toolRef.Versions {
+            repo.UninstallToolVersion(toolRef, &versionRef)
+          }
+
+          // Remove the tool itself
+          err := repo.UninstallTool(toolRef)
+          if err != nil {
+            die(err.Error())
           }
         }
 
-        // Cleanup any residue
-        registry.RemoveTool(tool)
+        complete(fmt.Sprintf("%s has left the rocket ship!", tool))
+
+
+      // Otherwise remove the specific version
+      } else {
+
+        // Parse version
+        verTriplet, err := registry.VersionFromString(*fVersion)
+        if err != nil {
+          die(fmt.Sprintf("invalid version: %s", *fVersion))
+        }
+
+        // Check if there is already a symlink for this tool
+        symlinkTarget, err := ReadBinSymlink(config, tool)
+        if err != nil {
+          die(fmt.Sprintf("%s: %s", tool, err.Error()))
+        }
+
+        // Walk versions and find the matching one
+        if toolRef, ok := repo.Tools[tool]; ok {
+          for _, versionRef := range toolRef.Versions {
+            if versionRef.Version.Equals(*verTriplet) {
+              repo.UninstallToolVersion(toolRef, &versionRef)
+
+              // If this version is the linked one, remove it
+              if symlinkTarget == versionRef.GetExecutablePath() {
+                RemoveBinSymlink(config, tool)
+              }
+
+              // Check if this was the last version
+              if !toolRef.HasInstalledVersions() {
+                // Remove the tool itself
+                err := repo.UninstallTool(toolRef)
+                if err != nil {
+                  die(err.Error())
+                }
+              }
+
+              complete(fmt.Sprintf("%s has left the rocket ship!", tool))
+            }
+          }
+        }
+
+        die(fmt.Sprintf("Unable to find version %s/%s", tool, *fVersion))
       }
 
-      complete(fmt.Sprintf("%s has left the rocket ship!", tool))
 
     ///
     /// Unlink without removing
@@ -258,9 +427,8 @@ func main() {
 
       // Remove symbolic link
       tool := flag.Arg(1)
-      if registry.HasBinSymlink(tool) {
-        fmt.Printf("%s %s %s\n", Bold(Red("==> ")), Bold(Gray("Unlink")), Bold(Red(tool)))
-        registry.RemoveBinSymlink(tool)
+      if HasBinSymlink(config, tool) {
+        RemoveBinSymlink(config, tool)
       } else {
         complete(fmt.Sprintf("%s is not linked (or installed)", tool))
       }
@@ -270,11 +438,8 @@ func main() {
     ///
     case "l", "ls", "list":
 
-      // Load registry
-      reg, err := registry.GetRegistry()
-      if err != nil {
-        die(err.Error())
-      }
+      // Load registry and repository
+      reg, repo := getRegistryRepository(config)
 
       // Sort names
       var keys []string
@@ -286,7 +451,13 @@ func main() {
       // Print
       fmt.Println("Available tools in the registry:")
       for _, tool := range keys {
-        fmt.Printf("%s%s\n", Bold(Gray(wideTab(" "+tool))), reg.Tools[tool].Desc)
+
+        suffix := ""
+        if repo.IsToolInstalled(tool) {
+          suffix = " *"
+        }
+
+        fmt.Printf("%s%s\n", Bold(Gray(wideTab(" "+tool+suffix))), reg.Tools[tool].Desc)
       }
 
     ///
@@ -298,11 +469,8 @@ func main() {
         help()
       }
 
-      // Load registry
-      reg, err := registry.GetRegistry()
-      if err != nil {
-        die(err.Error())
-      }
+      // Load registry and repository
+      reg, repo := getRegistryRepository(config)
 
       // Lookup tool
       tool := flag.Arg(1)
@@ -310,22 +478,25 @@ func main() {
         die(fmt.Sprintf("🥔  Could not find tool '%s', here is a potato...", tool))
       }
 
-      // Get installed versions
-      installedVersions, err := registry.GetInstalledVersions(tool)
-      if err != nil {
-        die(fmt.Sprintf("%s: %s", tool, err.Error()))
-      }
-
       // List versions
       fmt.Printf("Available versions for '%s':\n", tool)
       for _, ver := range toolInfo.Versions {
 
         suffix := ""
-        if findInstalledVersion(installedVersions, ver.Version) != nil {
+        installedTool := repo.FindToolVersion(tool, ver.Version)
+        if installedTool != nil {
           suffix = " (installed)"
         }
-
         fmt.Printf("  * %s %s\n", Bold(Gray(ver.ToString())), suffix)
+
+        if installedTool != nil {
+          verSize, err := installedTool.Size()
+          if err != nil {
+            fmt.Printf("    - size        : error: %s\n", err.Error())
+          } else {
+            fmt.Printf("    - size        : %s\n", humanize.Bytes(verSize))
+          }
+        }
 
         for _, artifact := range ver.Artifacts {
           if artifact.DockerToolArtifact != nil {
@@ -333,12 +504,22 @@ func main() {
             fmt.Printf("      image       : %s:%s\n", artifact.Image, artifact.Tag)
           }
           if artifact.ExecutableToolArtifact != nil {
-            if artifact.Interpreter != "" {
+            if artifact.Interpreter != nil {
               fmt.Printf("    - platform    : interpreter\n")
-              fmt.Printf("      interpreter : %s\n", artifact.Interpreter)
+              fmt.Printf("      interpreter : %s\n", repository.InterpreterName(artifact.Interpreter))
             } else {
               fmt.Printf("    - platform    : %s\n", artifact.Platform)
               fmt.Printf("      CPU arch    : %s\n", artifact.Arch)
+            }
+
+            if artifact.Source.WebFileSource != nil {
+              fmt.Printf("    - source file : %s\n", artifact.Source.FileURL)
+            }
+            if artifact.Source.WebArchiveTarSource != nil {
+              fmt.Printf("    - source tar  : %s\n", artifact.Source.TarURL)
+            }
+            if artifact.Source.VCSGitSource != nil {
+              fmt.Printf("    - source git  : %s\n", artifact.Source.GitURL)
             }
           }
         }
@@ -352,11 +533,8 @@ func main() {
         help()
       }
 
-      // Load registry
-      reg, err := registry.GetRegistry()
-      if err != nil {
-        die(err.Error())
-      }
+      // Load registry and repository
+      reg := getRegistry(config)
 
       // Lookup tool
       tool := flag.Arg(1)
@@ -395,23 +573,11 @@ func main() {
     /// Update the tool
     ///
     case "upgrade":
-      lastVersion, err := GetLatestVersion()
-      if err != nil {
+      err := upgradeTool()
+      if err == AlreadyUpgraded {
+        complete(err.Error())
+      } else if err != nil {
         die(err.Error())
-      }
-
-      myVersion := GetVersion()
-
-      // Check if there is a new version to upgrade
-      if lastVersion.Version.GraterThan(&myVersion) {
-        fmt.Printf("%s %s from %s -> to %s\n",
-          Magenta("==>"),
-          Bold(Gray("Upgrading")),
-          myVersion.ToString(),
-          lastVersion.Version.ToString())
-        PerformUpgrade(lastVersion)
-      } else {
-        complete("You already run the latest version")
       }
 
     ///
@@ -419,7 +585,7 @@ func main() {
     ///
     case "update":
       fmt.Printf("Updating registry...\n")
-      _, err := registry.UpdateRegistry()
+      _, err := registry.RefreshRegistry(config.DataDir)
       if err != nil {
         die(err.Error())
       }
@@ -429,7 +595,7 @@ func main() {
     /// Show the version
     ///
     case "v", "version":
-      fmt.Println(GetVersion().ToString())
+      fmt.Println(VERSION.ToString())
 
     default:
       fmt.Printf("Unknown action '%s'\n", flag.Arg(0))

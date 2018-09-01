@@ -74,7 +74,7 @@ Each artifact is an installable component in the user's computer. There are thre
     ```json
         ...
         {
-          "type": "docker"
+          "type": "docker",
           "image": "mesosphere/marathon-storage-tool",
           "tag": "1.5.5",
           "dockerArgs": "-p 8080:8080"
@@ -105,6 +105,7 @@ Each artifact is an installable component in the user's computer. There are thre
           ```
     * `extract` : A boolean flag, that if set to `true` assumes that the `soruce` is an archive and will be extracted. Otherwise, it's assumed to be a link to the script itself.
     * `entrypoint` : If the `source` is an archive or a git repository, this field should point to the path within the repository or the archive that should be interpreted.
+
 
     ```json
         ...
@@ -154,6 +155,7 @@ Each artifact is an installable component in the user's computer. There are thre
     * `source` : _(The same as the Interpreted Script)_
     * `extract` :  _(The same as the Interpreted Script)_
     * `entrypoint` :  _(The same as the Interpreted Script)_
+
 
     ```json
         ...

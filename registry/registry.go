@@ -12,24 +12,20 @@ import (
 /**
  * Get or refresh registry file
  */
-func GetRegistry() (*Registry, error) {
+func GetRegistry(cachePath string) (*Registry, error) {
   var info os.FileInfo
   var err error
-  registryPath, err := GetRegistryPath()
-  if err != nil {
-    return nil, err
-  }
 
   // Prepare package dir
-  if _, err := os.Stat(registryPath); os.IsNotExist(err) {
-    err = os.MkdirAll(registryPath, 0755)
+  if _, err := os.Stat(cachePath); os.IsNotExist(err) {
+    err = os.MkdirAll(cachePath, 0755)
     if err != nil {
       return nil, err
     }
   }
 
   // First try to load the file from disk, and if it failed, try web
-  registryFile := fmt.Sprintf("%s/registry.json", registryPath)
+  registryFile := fmt.Sprintf("%s/registry.json", cachePath)
   info, err = os.Stat(registryFile)
   if err != nil {
     return RefreshRegistry(registryFile)
@@ -44,36 +40,16 @@ func GetRegistry() (*Registry, error) {
 }
 
 /**
- * Force re-download registry
- */
-func UpdateRegistry() (*Registry, error) {
-  registryPath, err := GetRegistryPath()
-  if err != nil {
-    return nil, err
-  }
-
-  // Prepare package dir
-  if _, err := os.Stat(registryPath); os.IsNotExist(err) {
-    err = os.MkdirAll(registryPath, 0755)
-    if err != nil {
-      return nil, err
-    }
-  }
-
-  // Refresh registry
-  registryFile := fmt.Sprintf("%s/registry.json", registryPath)
-  return RefreshRegistry(registryFile)
-}
-
-/**
  * Download a fresh registry
  */
 func RefreshRegistry(registryFile string) (*Registry, error) {
+  // Download the latest registry
   reg, err := RegistryFromURL(GetRegistryURL())
   if err != nil {
     return nil, errors.New("Unable to fetch registry: " + err.Error())
   }
 
+  // Write cached version of the registry
   err = RegistryToDisk(reg, registryFile)
   if err != nil{
     return nil, errors.New("Unable to save the new registry: " + err.Error())

@@ -16,8 +16,9 @@ import (
   "strings"
 )
 
+
 type LatestVersion struct {
-  Version     registry.VersionInfo
+  Version     registry.VersionTriplet
   URL         string
 }
 
@@ -173,11 +174,7 @@ func PerformUpgrade(newVersion LatestVersion) error {
       "could run the new version: %s", err.Error()))
   }
 
-  // We are 99% sure that the upgrade was successful
-  complete("Upgraded to version " + newVersion.Version.ToString())
-
-  // We should now exit
-  os.Exit(0)
+  // Completed
   return nil
 }
 
