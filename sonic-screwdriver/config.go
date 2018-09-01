@@ -7,6 +7,7 @@ import (
 type ScrewdriverConfig struct {
   UserBinDir          string
   DataDir             string
+  RegistryURL         string
 }
 
 /**
@@ -45,5 +46,6 @@ func GetDefaultConfig() (*ScrewdriverConfig, error) {
   return &ScrewdriverConfig{
     binPath,
     regPath,
+    "https://raw.githubusercontent.com/wavesoft/dcos-sonic-screwdriver/master/pub/registry.json",
   }, nil
 }

@@ -7,12 +7,13 @@ import (
   "io/ioutil"
   "os"
   "time"
+  . "github.com/mesosphere/dcos-sonic-screwdriver/shared"
 )
 
 /**
  * Get or refresh registry file
  */
-func GetRegistry(cachePath string) (*Registry, error) {
+func GetRegistry(cachePath string, registryUrl string) (*Registry, error) {
   var info os.FileInfo
   var err error
 
@@ -28,12 +29,12 @@ func GetRegistry(cachePath string) (*Registry, error) {
   registryFile := fmt.Sprintf("%s/registry.json", cachePath)
   info, err = os.Stat(registryFile)
   if err != nil {
-    return RefreshRegistry(registryFile)
+    return RefreshRegistry(registryFile, registryUrl)
   }
 
   registryAge := time.Since(info.ModTime())
   if registryAge > time.Hour {
-    return RefreshRegistry(registryFile)
+    return RefreshRegistry(registryFile, registryUrl)
   }
 
   return RegistryFromDisk(registryFile)
@@ -42,9 +43,9 @@ func GetRegistry(cachePath string) (*Registry, error) {
 /**
  * Download a fresh registry
  */
-func RefreshRegistry(registryFile string) (*Registry, error) {
+func RefreshRegistry(registryFile string, registryUrl string) (*Registry, error) {
   // Download the latest registry
-  reg, err := RegistryFromURL(GetRegistryURL())
+  reg, err := RegistryFromURL(registryUrl)
   if err != nil {
     return nil, errors.New("Unable to fetch registry: " + err.Error())
   }
@@ -100,18 +101,12 @@ func RegistryToDisk(reg *Registry, s string) error {
  * Download the registry from URL
  */
 func RegistryFromURL(s string) (*Registry, error) {
-  client := RegistryHttpClient(false)
-  resp, err := client.Get(s)
+  // Download latest version
+  byt, err := Download(s, WithDefaults).
+              EventuallyReadAll()
   if err != nil {
     return nil, errors.New("Error updating registry: " + err.Error())
   }
 
-  // Parse contents as JSON in memory
-  defer resp.Body.Close()
-  body, err := ioutil.ReadAll(resp.Body)
-  if err != nil {
-    return nil, errors.New("Error updating registry: " + err.Error())
-  }
-
-  return ParseRegistry(body)
+  return ParseRegistry(byt)
 }

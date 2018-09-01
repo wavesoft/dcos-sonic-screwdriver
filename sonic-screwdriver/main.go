@@ -83,26 +83,6 @@ func wideTab(msg string) string {
   return msg + strings.Repeat("\t", tabs)
 }
 
-// /**
-//  * Search the given version into the list of installed versions and return
-//  * the matched installed version
-//  */
-// func findInstalledVersion(installedVersions registry.InstalledVersions,
-//     searchVer registry.VersionTriplet) *registry.InstalledVersion {
-//   if len(installedVersions) == 0 {
-//     return nil
-//   }
-
-//   // If the version we want is already cached, just switch the link there
-//   for _, isntVer := range installedVersions {
-//     if isntVer.Version.Equals(searchVer) {
-//       return &isntVer
-//     }
-//   }
-
-//   return nil
-// }
-
 /**
  * Load the registry  pair and exit on errors
  */
@@ -110,7 +90,7 @@ func getRegistry(config *ScrewdriverConfig) *registry.Registry {
   // Load registry (could be slower)
   spinner := spinner.New(spinner.CharSets[13], 100*time.Millisecond)
   spinner.Start()
-  reg, err := registry.GetRegistry(config.DataDir)
+  reg, err := registry.GetRegistry(config.DataDir, config.RegistryURL)
   if err != nil {
     spinner.Stop()
     die(err.Error())
@@ -585,7 +565,7 @@ func main() {
     ///
     case "update":
       fmt.Printf("Updating registry...\n")
-      _, err := registry.RefreshRegistry(config.DataDir)
+      _, err := registry.RefreshRegistry(config.DataDir, config.RegistryURL)
       if err != nil {
         die(err.Error())
       }

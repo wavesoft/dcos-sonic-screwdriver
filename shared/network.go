@@ -10,6 +10,7 @@ import (
   "fmt"
   "gopkg.in/cheggaaa/pb.v1"
   "io"
+  "io/ioutil"
   "net/http"
   "os"
   "path/filepath"
@@ -227,7 +228,14 @@ func (stream NetworkStreamChain) AndDecompressIfCompressed() NetworkStreamChain 
   }
 
   // If we have a plaint-text stream, pass it through
-  return stream
+  return NetworkStreamChain{
+    bReader,
+    nil,
+    stream.Meta,
+    func () error {
+      return stream.Close()
+    },
+  }
 }
 
 /**
@@ -327,4 +335,16 @@ func (stream NetworkStreamChain) EventuallyWriteTo(filename string) error {
 
   // Close the stream and return any final errors that might have occurred
   return stream.Close()
+}
+
+/**
+ * Read the stream contents as a byte array
+ */
+func (stream NetworkStreamChain) EventuallyReadAll() ([]byte, error) {
+  if stream.Err != nil {
+    return nil, stream.Err
+  }
+
+  defer stream.Close()
+  return ioutil.ReadAll(stream.Reader)
 }
