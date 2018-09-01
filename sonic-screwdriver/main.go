@@ -530,7 +530,7 @@ func main() {
         fmt.Printf("--=[ %s ]=--\n", Bold(Gray(tool)))
         fmt.Println("")
         if toolInfo.Help.Markdown {
-          PrintMarkdownText(toolInfo.Help.Text)
+          PrintMarkdownText([]byte(toolInfo.Help.Text))
         } else {
           fmt.Println(toolInfo.Help.Text)
         }

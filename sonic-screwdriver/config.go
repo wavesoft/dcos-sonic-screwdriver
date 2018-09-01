@@ -85,7 +85,7 @@ func GetDefaultConfig() (*ScrewdriverConfig, error) {
   return &ScrewdriverConfig{
     binPath,
     regPath,
-    "https://raw.githubusercontent.com/wavesoft/dcos-sonic-screwdriver/master/pub/registry.json",
+    "https://raw.githubusercontent.com/wavesoft/dcos-sonic-screwdriver-registry/master/registry.json",
     GetHardCodedPublicKey(),
   }, nil
 }
