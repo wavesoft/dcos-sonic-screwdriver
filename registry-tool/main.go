@@ -100,6 +100,52 @@ func loadPrivateKey(fKey string) *rsa.PrivateKey {
 }
 
 /**
+ * Save and sign registry
+ */
+func saveAndSign(reg *registry.Registry, registryPath string, fKey string) {
+  // Load private key
+  key := loadPrivateKey(fKey)
+
+  // Stringify registry
+  registryContents, err := registry.RegistryToBytes(reg)
+  if err != nil {
+    die(err.Error())
+  }
+
+  // Calculate signature
+  signature, err := SignPayload(registryContents, key)
+  if err != nil {
+    die(err.Error())
+  }
+
+  // Save signature
+  err = ioutil.WriteFile(registryPath + ".sig", signature, 0644)
+  if err != nil {
+    die(err.Error())
+  }
+
+  // Backup current registry file
+  if _, err := os.Stat(registryPath); err == nil {
+    if _, err := os.Stat(registryPath + ".bak"); err == nil {
+      err = os.Remove(registryPath + ".bak")
+      if err != nil {
+        die(err.Error())
+      }
+    }
+    err = os.Rename(registryPath, registryPath + ".bak")
+    if err != nil {
+      die(err.Error())
+    }
+  }
+
+  // Replace registry file
+  err = ioutil.WriteFile(registryPath, registryContents, 0644)
+  if err != nil {
+    die(err.Error())
+  }
+}
+
+/**
  * Entry point
  */
 func main() {
@@ -121,30 +167,11 @@ func main() {
   switch flag.Arg(0) {
 
     //
-    // Sign the existing file
+    // Sign the existing registry
     //
     case "s", "sign":
 
-      // Load private key
-      key := loadPrivateKey(*fKey)
-
-      // Stringify registry
-      byt, err := registry.RegistryToBytes(reg)
-      if err != nil {
-        die(err.Error())
-      }
-
-      // Calculate signature
-      signature, err := SignPayload(byt, key)
-      if err != nil {
-        die(err.Error())
-      }
-
-      err = ioutil.WriteFile(registryPath + ".sig", signature, 0644)
-      if err != nil {
-        die(err.Error())
-      }
-
+      saveAndSign(reg, registryPath, *fKey)
       complete("Signature saved on " + registryPath + ".sig")
 
     ///
