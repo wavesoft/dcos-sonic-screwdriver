@@ -58,3 +58,14 @@ func InterpreterName(interpreter *registry.ExecutableInterpreter) string {
 
   return "unknown"
 }
+
+/**
+ * Check for interpreter incompatibilities
+ */
+func CollectInterpreterIncompatibilities(interpreter *registry.ExecutableInterpreter) []string {
+  if (interpreter.PythonInterpreter != nil) {
+    return CollectPythonIncompatibilities(interpreter)
+  }
+
+  return nil
+}

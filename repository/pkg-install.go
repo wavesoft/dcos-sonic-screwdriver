@@ -15,6 +15,9 @@ import (
  * Run preparation script from within the package dir
  */
 func RunInstallScript(pkgDir string, artifact *registry.ToolArtifact) error {
+  if artifact.ExecutableToolArtifact == nil {
+    return nil
+  }
   if artifact.InstallScript == "" {
     return nil
   }
@@ -116,7 +119,7 @@ func InstallDockerArtifact(dstDir string, artifact *registry.ToolArtifact) error
  */
 func InstallWebFileSource(dstDir string, artifact *registry.ToolArtifact) error {
   fmt.Printf("%s %s %s\n", Blue("==> "), Gray("Downloading"), Bold(Gray(artifact.Source.FileURL)))
-  return Download(artifact.Source.FileURL, WithDefaults).
+  return Download(artifact.Source.FileURL, WithoutCompression).
          AndShowProgress("").
          AndValidateChecksum(artifact.Source.FileChecksum).
          AndDecompressIfCompressed().
@@ -128,7 +131,7 @@ func InstallWebFileSource(dstDir string, artifact *registry.ToolArtifact) error 
  */
 func InstallWebArchiveTarSource(dstDir string, artifact *registry.ToolArtifact) error {
   fmt.Printf("%s %s %s\n", Blue("==> "), Gray("Downloading"), Bold(Gray(artifact.Source.TarURL)))
-  return Download(artifact.Source.TarURL, WithDefaults).
+  return Download(artifact.Source.TarURL, WithoutCompression).
          AndShowProgress("").
          AndValidateChecksum(artifact.Source.TarChecksum).
          AndDecompressIfCompressed().

@@ -149,9 +149,9 @@ func saveAndSign(reg *registry.Registry, registryPath string, fKey string) {
  * Entry point
  */
 func main() {
-  fRegistry := flag.String("f", "../pub/registry.json", "Path to the registry file")
-  fRegistryFolder := flag.String("d", "../pub/registry", "Path to the tools directory")
-  fKey := flag.String("k", "../pub/private.pem", "Path to the private key file")
+  fRegistry := flag.String("f", "registry.json", "Path to the registry file")
+  fRegistryFolder := flag.String("d", "registry", "Path to the tools directory")
+  fKey := flag.String("k", "private.pem", "Path to the private key file")
   flag.Parse()
   if flag.NArg() < 1 {
     help()

@@ -101,7 +101,14 @@ func PythonCreateWrapper(sandboxPath string,
   venvPath := toolDir + "/python-venv"
 
   // Create a wrapper to run the script from within the sandbox
-  expr := fmt.Sprintf("#!/bin/sh\nsource %s/bin/activate\n%s/bin/python %s/%s $*\n",
+  expr := fmt.Sprintf("#!/bin/bash\nsource %s/bin/activate\n%s/bin/python %s/%s $*\n",
     venvPath, venvPath, sandboxPath, entrypoint)
   return []byte(expr), nil
+}
+
+/**
+ * Check wrong environment configuration when targeting python
+ */
+func CollectPythonIncompatibilities(interpreter *registry.ExecutableInterpreter) []string {
+  return nil
 }

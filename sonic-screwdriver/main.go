@@ -165,6 +165,23 @@ func checkMinToolVersion(reg *registry.Registry) {
 }
 
 /**
+ * Print a list of artifact errors
+ */
+func printArtifactErrors(errors [][]string) {
+  for idx, errorBranch := range errors {
+    fmt.Printf(" %s Artifact %d\n", Bold(Gray("┯")), idx + 1)
+    for edx, err := range errorBranch {
+      prefix := "└";
+      if edx < len(errorBranch) - 1 {
+        prefix = "├";
+      }
+      fmt.Printf(" %s %s %s\n",
+        Bold(Gray(prefix + "─")), Bold(Red("●")), UcFirst(err))
+    }
+  }
+}
+
+/**
  * Entry point
  */
 func main() {
@@ -253,9 +270,11 @@ func main() {
 
       // Find the first artifact that can be executed on our current system
       // configuration (CPU architecture, installed interpreters or docker)
-      artifact, err := repository.FindFirstRunableArtifact(version.Artifacts)
-      if err != nil {
-        die(fmt.Sprintf("%s: %s", tool, err.Error()))
+      artifact, errors := repository.FindFirstRunableArtifact(version.Artifacts)
+      if artifact == nil {
+        fmt.Printf("%s %s: no installable artifacts found. I tried:\n", Red("Error:"), tool)
+        printArtifactErrors(errors)
+        os.Exit(1)
       }
 
       // Check if there is already a symlink for this tool
