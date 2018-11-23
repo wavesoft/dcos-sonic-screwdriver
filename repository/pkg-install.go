@@ -23,7 +23,7 @@ func RunInstallScript(pkgDir string, artifact *registry.ToolArtifact) error {
   }
 
   // Run install script
-  fmt.Printf("%s %s\n", Blue("==> "), Gray("Running install script"))
+  fmt.Printf("%s %s %s\n", Blue("==> "), Gray("Running"), Bold(Gray("install script")))
   exitcode, err := ExecuteInFolderAndPassthrough(pkgDir, "sh", "-c", artifact.InstallScript)
   if err != nil {
     return err
@@ -89,6 +89,12 @@ func InstallArtifact(pkgDir string, toolDir string, artifact *registry.ToolArtif
 
   // If there is an install script, run it now
   err = RunInstallScript(dstDir, artifact)
+  if err != nil {
+    return nil, err
+  }
+
+  // If there is an uninstall script, create an uninstall wrapper now
+  err = CreateUninstallScript(dstDir, artifact)
   if err != nil {
     return nil, err
   }
@@ -255,6 +261,8 @@ func CreateInterpreterWrapper(toolDir string,
     toolDir,
     entryPoint,
     artifact.Interpreter,
+    artifact.Workdir,
+    artifact.Environment,
   )
   if err != nil {
     return fmt.Errorf("could not create wrapper: %s", err.Error())

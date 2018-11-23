@@ -2,6 +2,7 @@ package repository
 
 import (
   "fmt"
+  "strings"
   "github.com/mesosphere/dcos-sonic-screwdriver/registry"
 )
 
@@ -23,20 +24,56 @@ func InterpreterIsValid(interpreter *registry.ExecutableInterpreter) bool {
 }
 
 /**
+ * Return the shell script contents that prepare the environment according to the args given
+ */
+func GetEnvironmentPreparationContents(pkgDir string,
+  toolDir string,
+  workDir string,
+  envVars map[string]string) string {
+
+  var builder strings.Builder
+
+  // Change to the appropriate directory, as configured
+  if workDir != "" {
+    // Replace templates
+    workDir = strings.Replace(workDir, "$ARTIFACT", pkgDir, -1)
+    workDir = strings.Replace(workDir, "$TOOL", toolDir, -1)
+
+    // Compose the cd command, escaping stray single quotes
+    builder.WriteString(fmt.Sprintf("cd '%s'\n", strings.Replace(workDir, `'`, `'"'"'`, -1)))
+  }
+
+  // Expose environment variables
+  for name, value := range envVars {
+    builder.WriteString(fmt.Sprintf("export %s='%s'\n", name, strings.Replace(value, `'`, `'"'"'`, -1)))
+  }
+
+  // Return the composed string
+  return builder.String()
+}
+
+/**
  * Return a wrapper script contents that runs the specified file
  */
-func GetInterpreterWrapperContents(sandboxPath string,
+func GetInterpreterWrapperContents(pkgDir string,
     toolDir string,
     entrypoint string,
-    interpreter *registry.ExecutableInterpreter) ([]byte, error) {
+    interpreter *registry.ExecutableInterpreter,
+    workDir string,
+    envVars map[string]string) ([]byte, error) {
+
+  // Get the environment preparation shell contents
+  envPreparation := GetEnvironmentPreparationContents(pkgDir, toolDir, workDir, envVars)
+
+  // Return the interpreter wrapper
   if (interpreter.PythonInterpreter != nil) {
-    return PythonCreateWrapper(sandboxPath, toolDir, entrypoint, interpreter)
+    return PythonCreateWrapper(pkgDir, toolDir, entrypoint, interpreter, envPreparation)
   }
   if (interpreter.ShellInterpreter != nil) {
-    return ShellCreateWrapper(sandboxPath, toolDir, entrypoint, interpreter)
+    return ShellCreateWrapper(pkgDir, toolDir, entrypoint, interpreter, envPreparation)
   }
   if (interpreter.JavaInterpreter != nil) {
-    return JavaCreateWrapper(sandboxPath, toolDir, entrypoint, interpreter)
+    return JavaCreateWrapper(pkgDir, toolDir, entrypoint, interpreter, envPreparation)
   }
 
   return nil, fmt.Errorf("unsupported interpreter")

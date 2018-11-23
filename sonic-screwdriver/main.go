@@ -17,7 +17,7 @@ import (
   . "github.com/mesosphere/dcos-sonic-screwdriver/shared"
 )
 
-var VERSION VersionTriplet = VersionTriplet{0,1,2}
+var VERSION VersionTriplet = VersionTriplet{0,1,3}
 var AlreadyUpgraded = errors.New("You already run the latest version")
 
 /**

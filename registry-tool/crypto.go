@@ -29,7 +29,7 @@ func LoadPrivateKey(file string) (*rsa.PrivateKey, error) {
 
   // Read password
   if x509.IsEncryptedPEMBlock(block) {
-    passwd, err := PasswordPrompt("Password: ")
+    passwd, err := PasswordPrompt("Key Password: ")
     if err != nil {
       return nil, fmt.Errorf("unable to read private key password: %s", err.Error())
     }

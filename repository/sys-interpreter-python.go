@@ -90,7 +90,8 @@ func PythonPrepareSandbox(sandboxPath string,
 func PythonCreateWrapper(sandboxPath string,
   toolDir string,
   entrypoint string,
-  interpreter *registry.ExecutableInterpreter) ([]byte, error) {
+  interpreter *registry.ExecutableInterpreter,
+  envPreparation string) ([]byte, error) {
 
   // Create sandbox
   err := PythonPrepareSandbox(sandboxPath, toolDir, interpreter)
@@ -101,8 +102,8 @@ func PythonCreateWrapper(sandboxPath string,
   venvPath := toolDir + "/python-venv"
 
   // Create a wrapper to run the script from within the sandbox
-  expr := fmt.Sprintf("#!/bin/bash\nsource %s/bin/activate\n%s/bin/python %s/%s $*\n",
-    venvPath, venvPath, sandboxPath, entrypoint)
+  expr := fmt.Sprintf("#!/bin/bash\n%s\nsource %s/bin/activate\n%s/bin/python %s/%s $*\n",
+    envPreparation, venvPath, venvPath, sandboxPath, entrypoint)
   return []byte(expr), nil
 }
 

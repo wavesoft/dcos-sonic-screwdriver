@@ -96,13 +96,16 @@ type DockerToolArtifact struct {
 }
 
 type ExecutableToolArtifact struct {
-  Source        WebSource             `json:"source"`
-  Require       ArtifactRequirements  `json:"require,omitempty"`
-  Entrypoint    string                `json:"entrypoint,omitempty"`
-  Arch          string                `json:"arch,omitempty"`
-  Platform      string                `json:"platform,omitempty"`
-  Interpreter  *ExecutableInterpreter `json:"interpreter,omitempty"`
-  InstallScript string                `json:"installScript,omitempty"`
+  Source          WebSource             `json:"source"`
+  Require         ArtifactRequirements  `json:"require,omitempty"`
+  Entrypoint      string                `json:"entrypoint,omitempty"`
+  Arch            string                `json:"arch,omitempty"`
+  Platform        string                `json:"platform,omitempty"`
+  Interpreter     *ExecutableInterpreter `json:"interpreter,omitempty"`
+  InstallScript   string                `json:"installScript,omitempty"`
+  UninstallScript string                `json:"uninstallScript,omitempty"`
+  Workdir         string                `json:"workdir",omitempty`
+  Environment     map[string]string     `json:"env",omitempty`
 }
 
 type ToolArtifact struct {

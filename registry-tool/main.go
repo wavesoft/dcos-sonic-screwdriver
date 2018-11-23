@@ -174,7 +174,7 @@ func main() {
 
       // Configure settings
       reg.Version = 1
-      reg.ToolVersion = VersionTriplet{0,1,2}
+      reg.ToolVersion = VersionTriplet{0,1,3}
 
       // Save and sign
       registryPath := getRegistryPath(*fRegistry)

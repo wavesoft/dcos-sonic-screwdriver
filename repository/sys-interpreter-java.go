@@ -18,10 +18,11 @@ func IsJavaInterpreterValid(interpreter *registry.ExecutableInterpreter) bool {
 func JavaCreateWrapper(sandboxPath string,
   toolDir string,
   entrypoint string,
-  interpreter *registry.ExecutableInterpreter) ([]byte, error) {
+  interpreter *registry.ExecutableInterpreter,
+  envPreparation string) ([]byte, error) {
 
   // Create a wrapper to run the script from within the sandbox
-  expr := fmt.Sprintf("#!/bin/sh\njava %s -jar %s/%s $*\n",
-    interpreter.JavaArgs, sandboxPath, entrypoint)
+  expr := fmt.Sprintf("#!/bin/sh\n%s\njava %s -jar %s/%s $*\n",
+    envPreparation, interpreter.JavaArgs, sandboxPath, entrypoint)
   return []byte(expr), nil
 }
