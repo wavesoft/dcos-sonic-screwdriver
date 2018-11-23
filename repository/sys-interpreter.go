@@ -2,6 +2,7 @@ package repository
 
 import (
   "fmt"
+  "regexp"
   "strings"
   "github.com/mesosphere/dcos-sonic-screwdriver/registry"
 )
@@ -24,6 +25,23 @@ func InterpreterIsValid(interpreter *registry.ExecutableInterpreter) bool {
 }
 
 /**
+ * Replaces templates with the full paths
+ */
+func ReplacePathTemplates(expr string, pkgDir string, toolDir string) string {
+  r := regexp.MustCompile(`%\w+%`)
+  return r.ReplaceAllStringFunc(expr, func(m string) string {
+    switch strings.ToLower(m[1:len(m)-1]) {
+      case "artifact":
+        return pkgDir
+      case "tool":
+        return toolDir
+      default:
+        return ""
+    }
+  })
+}
+
+/**
  * Return the shell script contents that prepare the environment according to the args given
  */
 func GetEnvironmentPreparationContents(pkgDir string,
@@ -35,17 +53,23 @@ func GetEnvironmentPreparationContents(pkgDir string,
 
   // Change to the appropriate directory, as configured
   if workDir != "" {
-    // Replace templates
-    workDir = strings.Replace(workDir, "$ARTIFACT", pkgDir, -1)
-    workDir = strings.Replace(workDir, "$TOOL", toolDir, -1)
-
-    // Compose the cd command, escaping stray single quotes
-    builder.WriteString(fmt.Sprintf("cd '%s'\n", strings.Replace(workDir, `'`, `'"'"'`, -1)))
+    builder.WriteString(fmt.Sprintf("cd \"%s\"\n", strings.Replace(
+      ReplacePathTemplates(workDir, pkgDir, toolDir),
+      `"`, `"'"'"`, -1,
+    )))
   }
 
   // Expose environment variables
   for name, value := range envVars {
-    builder.WriteString(fmt.Sprintf("export %s='%s'\n", name, strings.Replace(value, `'`, `'"'"'`, -1)))
+    builder.WriteString(
+      fmt.Sprintf("export %s=\"%s\"\n",
+        name,
+        strings.Replace(
+          ReplacePathTemplates(value, pkgDir, toolDir),
+          `"`, `"'"'"`, -1,
+        ),
+      ),
+    )
   }
 
   // Return the composed string
