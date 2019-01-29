@@ -16,6 +16,14 @@ const (
 )
 
 /**
+ * Environment delivery
+ */
+
+type InterpreterEnvironment struct {
+  ArchiveURL      string        `json:"url"`
+}
+
+/**
  * Interpreters for a `ExecutableToolArtifact`
  */
 
@@ -36,6 +44,8 @@ type ExecutableInterpreter struct {
   *JavaInterpreter
   *PythonInterpreter
   *ShellInterpreter
+
+  Environment     InterpreterEnvironment  `json:"environment"`
 }
 
 /**
@@ -90,26 +100,30 @@ type ArtifactRequirements []ArtifactRequirement
  * Types of a `ToolArtifact`
  */
 type DockerToolArtifact struct {
-  Image       string                  `json:"image"`
-  Tag         string                  `json:"tag,omitempty"`
-  DockerArgs  string                  `json:"dockerArgs,omitempty"`
+  Image           string                  `json:"image"`
+  Tag             string                  `json:"tag,omitempty"`
+  DockerArgs      string                  `json:"arguments,omitempty"`
+  Command         string                  `json:"command,omitempty"`
+  SetupScript     string                  `json:"setupScript,omitempty"`
+  TeardownScript  string                  `json:"teardownScript,omitempty"`
 }
 
 type ExecutableToolArtifact struct {
-  Source          WebSource             `json:"source"`
-  Require         ArtifactRequirements  `json:"require,omitempty"`
-  Entrypoint      string                `json:"entrypoint,omitempty"`
-  Arch            string                `json:"arch,omitempty"`
-  Platform        string                `json:"platform,omitempty"`
-  Interpreter     *ExecutableInterpreter `json:"interpreter,omitempty"`
-  InstallScript   string                `json:"installScript,omitempty"`
-  UninstallScript string                `json:"uninstallScript,omitempty"`
-  Workdir         string                `json:"workdir",omitempty`
-  Environment     map[string]string     `json:"env",omitempty`
+  Source          WebSource               `json:"source"`
+  Require         ArtifactRequirements    `json:"require,omitempty"`
+  Entrypoint      string                  `json:"entrypoint,omitempty"`
+  Arch            string                  `json:"arch,omitempty"`
+  Platform        string                  `json:"platform,omitempty"`
+  Interpreter     *ExecutableInterpreter  `json:"interpreter,omitempty"`
+  InstallScript   string                  `json:"installScript,omitempty"`
+  UninstallScript string                  `json:"uninstallScript,omitempty"`
+  Workdir         string                  `json:"workdir",omitempty`
+  Environment     map[string]string       `json:"env",omitempty`
+
 }
 
 type ToolArtifact struct {
-  Type        ArtifactType            `json:"type"`
+  Type        ArtifactType                `json:"type"`
 
   *DockerToolArtifact
   *ExecutableToolArtifact

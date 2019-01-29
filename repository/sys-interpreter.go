@@ -2,9 +2,9 @@ package repository
 
 import (
   "fmt"
-  "regexp"
   "strings"
   "github.com/mesosphere/dcos-sonic-screwdriver/registry"
+  . "github.com/mesosphere/dcos-sonic-screwdriver/shared"
 )
 
 /**
@@ -25,23 +25,6 @@ func InterpreterIsValid(interpreter *registry.ExecutableInterpreter) bool {
 }
 
 /**
- * Replaces templates with the full paths
- */
-func ReplacePathTemplates(expr string, pkgDir string, toolDir string) string {
-  r := regexp.MustCompile(`%\w+%`)
-  return r.ReplaceAllStringFunc(expr, func(m string) string {
-    switch strings.ToLower(m[1:len(m)-1]) {
-      case "artifact":
-        return pkgDir
-      case "tool":
-        return toolDir
-      default:
-        return ""
-    }
-  })
-}
-
-/**
  * Return the shell script contents that prepare the environment according to the args given
  */
 func GetEnvironmentPreparationContents(pkgDir string,
@@ -54,7 +37,7 @@ func GetEnvironmentPreparationContents(pkgDir string,
   // Change to the appropriate directory, as configured
   if workDir != "" {
     builder.WriteString(fmt.Sprintf("cd \"%s\"\n", strings.Replace(
-      ReplacePathTemplates(workDir, pkgDir, toolDir),
+      ReplacePathTemplates(workDir, pkgDir, toolDir, nil),
       `"`, `"'"'"`, -1,
     )))
   }
@@ -65,7 +48,7 @@ func GetEnvironmentPreparationContents(pkgDir string,
       fmt.Sprintf("export %s=\"%s\"\n",
         name,
         strings.Replace(
-          ReplacePathTemplates(value, pkgDir, toolDir),
+          ReplacePathTemplates(value, pkgDir, toolDir, nil),
           `"`, `"'"'"`, -1,
         ),
       ),

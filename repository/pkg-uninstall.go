@@ -14,6 +14,9 @@ import (
  * uninstall directory and will be used before removing the tool.
  */
 func CreateUninstallScript(pkgDir string, artifact *registry.ToolArtifact) error {
+  if artifact.ExecutableToolArtifact == nil {
+    return nil
+  }
   if artifact.UninstallScript == "" {
     return nil
   }

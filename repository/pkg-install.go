@@ -188,7 +188,7 @@ func InstallToolVersion(toolDir string,
 
   // Create wrappers
   if (artifact.DockerToolArtifact != nil) {
-    err := CreateDockerWrapper(toolVerDir, artifact)
+    err := CreateDockerWrapper(toolVerDir, artifact, installedArtifact)
     if err != nil {
       os.RemoveAll(toolVerDir)
       return nil, err
@@ -226,12 +226,27 @@ func InstallToolVersion(toolDir string,
  * Create a docker wrapper script
  */
 func CreateDockerWrapper(toolDir string,
-  artifact *registry.ToolArtifact) error {
+  artifact *registry.ToolArtifact,
+  installedArtifact *InstalledArtifact) error {
+  var dCommand string = ""
   execPath := toolDir + "/run"
+  pkgDir := installedArtifact.Folder
+
+  // Expand arguments
+  dSetupScript := ReplacePathTemplates(artifact.SetupScript, pkgDir, toolDir, nil)
+  dTeardownScript := ReplacePathTemplates(artifact.TeardownScript, pkgDir, toolDir, nil)
+  dArgs := ReplacePathTemplates(artifact.DockerArgs, pkgDir, toolDir, nil)
+  if artifact.Command == "" {
+    dCommand = "$*"
+  } else {
+    dCommand = ReplacePathTemplates(artifact.Command, pkgDir, toolDir, nil)
+  }
 
   // Create wrapper script
-  dat := []byte(fmt.Sprintf("#!/bin/sh\ndocker run -it --rm %s %s:%s $*\n",
-    artifact.DockerArgs, artifact.Image, artifact.Tag))
+  dat := []byte(fmt.Sprintf(
+    "#!/bin/sh\n%s\ndocker run -it --rm %s %s:%s %s\n%s\n",
+    dSetupScript, dArgs, artifact.Image, artifact.Tag,
+    dCommand, dTeardownScript))
   err := ioutil.WriteFile(execPath, dat, 0755)
   if err != nil {
     return fmt.Errorf("could not create wrapper: %s", err.Error())

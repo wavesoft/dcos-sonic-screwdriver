@@ -1,6 +1,7 @@
 package main
 
 import (
+  "strings"
   "github.com/russross/blackfriday"
   "os"
   . "github.com/mesosphere/dcos-sonic-screwdriver/shared"
@@ -31,4 +32,15 @@ func PrintMarkdownText(input []byte) {
 
   output := blackfriday.Markdown(input, renderer, extensions)
   os.Stdout.Write(output)
+}
+
+/**
+ * Get tool version from the tool string
+ */
+func SplitVersion(tool string) (string, string) {
+  parts := strings.Split(tool, ":")
+  if len(parts) == 1 {
+    return tool, ""
+  }
+  return parts[0], parts[1]
 }

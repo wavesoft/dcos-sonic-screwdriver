@@ -99,11 +99,18 @@ func PythonCreateWrapper(sandboxPath string,
     return nil, err
   }
 
+  // Compose paths
   venvPath := toolDir + "/python-venv"
+  entrypointPath := ReplacePathTemplates(entrypoint, sandboxPath, toolDir, nil)
+
+  // Default to sandboxpath if missing
+  if !strings.Contains(entrypoint, "%") {
+    entrypointPath = sandboxPath + "/" + entrypointPath
+  }
 
   // Create a wrapper to run the script from within the sandbox
-  expr := fmt.Sprintf("#!/bin/bash\nsource %s/bin/activate\n%s\n%s/bin/python %s/%s $*\n",
-    venvPath, envPreparation, venvPath, sandboxPath, entrypoint)
+  expr := fmt.Sprintf("#!/bin/bash\nsource %s/bin/activate\n%s\n%s/bin/python %s $*\n",
+    venvPath, envPreparation, venvPath, entrypointPath)
   return []byte(expr), nil
 }
 

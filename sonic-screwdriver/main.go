@@ -17,7 +17,7 @@ import (
   . "github.com/mesosphere/dcos-sonic-screwdriver/shared"
 )
 
-var VERSION VersionTriplet = VersionTriplet{0,1,4}
+var VERSION VersionTriplet = VersionTriplet{0,1,5}
 var AlreadyUpgraded = errors.New("You already run the latest version")
 
 /**
@@ -41,8 +41,8 @@ func banner() {
 func help() {
   banner()
   fmt.Println("Typical usage:")
-  fmt.Println("  ss [-v VERSION] add [TOOL]")
-  fmt.Println("  ss rm [TOOL]")
+  fmt.Println("  ss add [TOOL][:VERSION]")
+  fmt.Println("  ss rm [TOOL][:VERSION]")
   fmt.Println("  ss link [TOOL]")
   fmt.Println("  ss unlink [TOOL]")
   fmt.Println("")
@@ -78,9 +78,9 @@ func complete(msg string) {
 /**
  * Pad message with the remaining tabs until we reach 32 characters-wide
  */
-func wideTab(msg string) string {
-  tabs := (40 - len(msg)) / 8
-  return msg + strings.Repeat("\t", tabs)
+func widePad(msg string) string {
+  tabs := 40 - len(msg)
+  return msg + strings.Repeat(" ", tabs)
 }
 
 /**
@@ -251,8 +251,8 @@ func main() {
       // Load registry and repository
       reg, repo := getRegistryRepository(config)
 
-      // Lookup tool
-      tool := flag.Arg(1)
+      // Lookup tool and separate version
+      tool, tVersion := SplitVersion(flag.Arg(1))
       if toolInfo, ok = reg.Tools[tool]; !ok {
         die(fmt.Sprintf("🥔  Could not find tool '%s', here is a potato...", tool))
       }
@@ -260,9 +260,12 @@ func main() {
       // Lookup version
       var version *registry.ToolVersion = nil
       if *fVersion != "" {
-        version, err = toolInfo.Versions.Find(*fVersion)
+        tVersion = *fVersion
+      }
+      if tVersion != "" {
+        version, err = toolInfo.Versions.Find(tVersion)
         if err != nil {
-          die(fmt.Sprintf("%s: %s (use `ver` to list available versions)", tool, err.Error()))
+          die(fmt.Sprintf("%s: %s (use `info %s` to list available versions)", tool, err.Error(), tool))
         }
       } else {
         version = toolInfo.Versions.Latest()
@@ -344,14 +347,17 @@ func main() {
       }
 
       // Check if we have neither a symlink, nor a tool
-      tool := flag.Arg(1)
+      tool, tVersion := SplitVersion(flag.Arg(1))
       if !repo.IsToolInstalled(tool) && !HasBinSymlink(config, tool) {
         complete(fmt.Sprintf("%s is not installed", tool))
       }
 
       // If the user has not requested the removal of a specific version,
       // remove everything
-      if *fVersion == "" {
+      if *fVersion != "" {
+        tVersion = *fVersion
+      }
+      if tVersion == "" {
 
         // If we have a tray symlink, remove it
         if HasBinSymlink(config, tool) {
@@ -378,9 +384,9 @@ func main() {
       } else {
 
         // Parse version
-        verTriplet, err := VersionFromString(*fVersion)
+        verTriplet, err := VersionFromString(tVersion)
         if err != nil {
-          die(fmt.Sprintf("invalid version: %s", *fVersion))
+          die(fmt.Sprintf("invalid version: %s", tVersion))
         }
 
         // Check if there is already a symlink for this tool
@@ -414,7 +420,7 @@ func main() {
           }
         }
 
-        die(fmt.Sprintf("Unable to find version %s/%s", tool, *fVersion))
+        die(fmt.Sprintf("Unable to find version %s/%s", tool, tVersion))
       }
 
 
@@ -459,7 +465,7 @@ func main() {
           suffix = " *"
         }
 
-        fmt.Printf("%s%s\n", Bold(Gray(wideTab(" "+tool+suffix))), reg.Tools[tool].Desc)
+        fmt.Printf("%s%s\n", Bold(Gray(widePad(" "+tool+suffix))), reg.Tools[tool].Desc)
       }
 
     ///
