@@ -11,9 +11,10 @@ Just install the binary in your system:
 ### For Mac OSX
 
 ```
-curl -L -o /usr/local/bin/ss \
-  https://github.com/wavesoft/dcos-sonic-screwdriver/releases/download/v0.1.2/sonic-screwdriver.darwin && \
-  chmod +x /usr/local/bin/ss 
+[ "$(curl -L https://github.com/wavesoft/dcos-sonic-screwdriver/releases/download/v0.1.5/sonic-screwdriver.darwin \
+  | tee /usr/local/bin/ss | shasum -a256)" == "dff3f13e452996713b41b164968bca8c35b5e559cc42be8a7decef1ddfc40bda  -" ] \
+  && chmod +x /usr/local/bin/ss \
+  || echo 'Invalid Checksum!'
 ```
 
 ### For Linux
